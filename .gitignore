@@ -1,0 +1,125 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+out/
+publish/
+artifacts/
+
+# Rider / IntelliJ
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+.nuget/packages/
+
+# Dotnet user secrets / local configuration
+secrets.json
+.local.settings.json
+appsettings*.Local.json
+appsettings.Local.json
+.env
+.env.local
+
+# Logs, temp and diagnostics
+*.log
+logs/
+TestResults/
+coverage/
+coverage.*
+*.trx
+
+# OS generated
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# JetBrains / ReSharper
+_ReSharper*/
+*.DotSettings.user
+*.DotSettings
+
+# NCrunch
+*.ncrunch*
+_ncrunch*/
+
+# Coverage / profiling
+*.coverage
+*.coveragexml
+*.prof
+*.vsp
+*.vspx
+
+# Test adapters and results
+*.TestResults/
+TestResults/
+
+# Local database files
+*.mdf
+*.ldf
+*.sqlite
+*.db
+
+# Secrets, keys, certs
+*.pfx
+*.key
+*.pem
+*.cer
+
+# Package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+package-lock.json
+yarn.lock
+
+# Docker
+docker-compose.override.yml
+**/docker-compose.override.yml
+
+# Publish / deployment
+*.publishsettings
+publish/
+wwwroot/
+
+# IDE helpers / generated files
+*.bak
+*.old
+*.orig
+*.backup
+
+# OneDrive / Sync issues
+~$*
+*.tmp
+
+# OS-specific thumbnails / metadata
+Thumbs.db
+.DS_Store
+
+# Ignore user-specific JetBrains cache (if present)
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+
+# Optional: Ignore local tool caches
+.tools/
+.vscode-test/
