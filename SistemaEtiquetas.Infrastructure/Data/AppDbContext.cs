@@ -7,6 +7,8 @@ namespace SistemaEtiquetas.Infrastructure.Data
     {
         public DbSet<Pedido> Pedidos { get; set; }
 
+        public DbSet<PedidoItem> PedidoItens { get; set; }
+
         public DbSet<Configuracao> Configuracoes { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)

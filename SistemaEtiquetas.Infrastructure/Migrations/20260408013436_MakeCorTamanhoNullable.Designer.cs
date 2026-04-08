@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaEtiquetas.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using SistemaEtiquetas.Infrastructure.Data;
 namespace SistemaEtiquetas.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408013436_MakeCorTamanhoNullable")]
+    partial class MakeCorTamanhoNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -78,12 +81,6 @@ namespace SistemaEtiquetas.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Cor")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Erro")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ErroMensagem")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Impresso")
