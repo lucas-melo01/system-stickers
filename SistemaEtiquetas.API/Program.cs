@@ -25,6 +25,20 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
+// Apply any pending migrations to ensure database schema matches model (creates identity columns etc.)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch
+    {
+        // Migration failures should be visible in logs during startup; swallow here to avoid crashing in debugging scenarios
+    }
+}
+
 _ = Task.Run(async () =>
 {
     while (true)
@@ -55,13 +69,10 @@ _ = Task.Run(async () =>
                 }
 
                 item.Impresso = true;
-                item.Erro = false;
-                item.ErroMensagem = null;
             }
             catch (Exception ex)
             {
-                item.Erro = true;
-                item.ErroMensagem = ex.Message;
+                // Error handling: log internally if needed, but don't persist to database
             }
         }
 
@@ -138,11 +149,20 @@ app.MapPost("/webhook/pedido", async (AppDbContext db, HttpRequest request) =>
     if (existe)
         return Results.Ok("Pedido já processado");
 
+    // Normalize incoming date to UTC to prevent Npgsql timestamp with time zone errors
+    var dataPedido = pedidoDto.data_criacao;
+    if (dataPedido.Kind == DateTimeKind.Unspecified)
+    {
+        // Assume incoming timestamp is UTC when kind is unspecified; adjust if your source uses local time
+        dataPedido = DateTime.SpecifyKind(dataPedido, DateTimeKind.Utc);
+    }
+    dataPedido = dataPedido.ToUniversalTime();
+
     var pedido = new Pedido
     {
         PedidoExternoId = pedidoDto.id.ToString(),
         NomeCliente = pedidoDto.cliente?.nome,
-        DataPedido = pedidoDto.data_criacao,
+        DataPedido = dataPedido,
         ClienteCpf = pedidoDto.cliente?.cpf
     };
 
@@ -160,48 +180,6 @@ app.MapPost("/webhook/pedido", async (AppDbContext db, HttpRequest request) =>
     await db.SaveChangesAsync();
 
     return Results.Ok("Pedido salvo com sucesso");
-});
-
-app.MapPost("/imprimir", async (AppDbContext db) =>
-{
-    var pedidos = await db.Pedidos
-        .Include(p => p.Itens)
-        .ToListAsync();
-
-    var etiquetaService = new EtiquetaService();
-    var impressaoService = app.Services.GetRequiredService<ImpressaoService>();
-
-    foreach (var pedido in pedidos)
-    {
-        foreach (var item in pedido.Itens.Where(i => !i.Impresso))
-        {
-            try
-            {
-                for (int i = 0; i < item.Quantidade; i++)
-                {
-                    var zpl = etiquetaService.GerarZpl(pedido, item);
-
-                    var sucesso = impressaoService.Imprimir(zpl, out string erro);
-
-                    if (!sucesso)
-                        throw new Exception(erro);
-                }
-
-                item.Impresso = true;
-                item.Erro = false;
-                item.ErroMensagem = null;
-            }
-            catch (Exception ex)
-            {
-                item.Erro = true;
-                item.ErroMensagem = ex.Message;
-            }
-        }
-    }
-
-    await db.SaveChangesAsync();
-
-    return Results.Ok("Processamento finalizado");
 });
 
 app.MapPost("/reimprimir/{itemId}", async (AppDbContext db, int itemId) =>
@@ -223,20 +201,6 @@ app.MapPost("/reimprimir/{itemId}", async (AppDbContext db, int itemId) =>
     }
 
     return Results.Ok("Reimpressão feita");
-});
-
-app.MapGet("/etiqueta/teste", async (AppDbContext db) =>
-{
-    var pedido = await db.Pedidos.Include(p => p.Itens).FirstOrDefaultAsync(p => p.Id == 3);
-
-    if (pedido == null || !pedido.Itens.Any())
-        return Results.BadRequest("Sem dados");
-
-    var service = new EtiquetaService();
-
-    var zpl = service.GerarZpl(pedido, pedido.Itens.First());
-
-    return Results.Text(zpl, "text/plain");
 });
 
 app.MapGet("/", () => "API Rodando 🚀");

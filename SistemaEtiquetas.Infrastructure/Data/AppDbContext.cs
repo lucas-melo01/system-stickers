@@ -15,5 +15,30 @@ namespace SistemaEtiquetas.Infrastructure.Data
             : base(options)
         {
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Pedido>(b =>
+            {
+                b.HasKey(p => p.Id);
+                b.Property(p => p.Id).ValueGeneratedOnAdd();
+
+                b.Property(p => p.PedidoExternoId).IsRequired();
+                b.Property(p => p.NomeCliente).IsRequired();
+
+                b.HasMany(p => p.Itens)
+                    .WithOne(i => i.Pedido)
+                    .HasForeignKey(i => i.PedidoId)
+                    .IsRequired();
+            });
+
+            modelBuilder.Entity<PedidoItem>(b =>
+            {
+                b.HasKey(i => i.Id);
+                b.Property(i => i.Id).ValueGeneratedOnAdd();
+            });
+
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

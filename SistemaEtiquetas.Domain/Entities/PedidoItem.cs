@@ -1,19 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SistemaEtiquetas.Domain.Entities
 {
     public class PedidoItem
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         public int PedidoId { get; set; }
         public Pedido Pedido { get; set; }
 
-        public string Produto { get; set; }
+        public string Produto { get; set; } = string.Empty;
 
-        public string SKU { get; set; }
+        public string SKU { get; set; } = string.Empty;
 
         public string? Cor { get; set; }
 
@@ -22,9 +26,5 @@ namespace SistemaEtiquetas.Domain.Entities
         public int Quantidade { get; set; }
 
         public bool Impresso { get; set; } = false;
-
-        public bool Erro { get; set; } = false;
-
-        public string? ErroMensagem { get; set; }
     }
 }
