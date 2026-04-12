@@ -8,8 +8,12 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Postgres (Supabase) connection. Prefer environment variable "DATABASE_URL".
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? "Host=db.pvmdtjxixrpckfdbrhpz.supabase.co;Username=postgres;Password=%/i_EjK/eq5EV2$;Database=postgres;Port=5432;SSL Mode=Require;Trust Server Certificate=true";
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=database.db"));
+    options.UseNpgsql(databaseUrl));
 
 // registra ImpressaoService no DI para ler config.json
 builder.Services.AddSingleton<ImpressaoService>();
