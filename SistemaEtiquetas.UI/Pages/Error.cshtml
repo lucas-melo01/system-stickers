@@ -1,0 +1,21 @@
+﻿@page
+@model ErrorModel
+
+<h2>🚨 Erros de Impressão</h2>
+
+<table class="table mt-4">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Erro</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Itens)
+        {
+            <tr>
+                <td>@item.ErroMensagem</td>
+            </tr>
+        }
+    </tbody>
+</table>

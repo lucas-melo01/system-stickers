@@ -12,6 +12,9 @@ namespace SistemaEtiquetas.Domain.Entities
 
         public string NomeCliente { get; set; }
 
+        // CPF do cliente recebido no webhook
+        public string? ClienteCpf { get; set; }
+
         public DateTime DataPedido { get; set; }
 
         public DateTime DataCriacao { get; set; } = DateTime.Now;

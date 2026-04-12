@@ -1,4 +1,8 @@
-﻿namespace SistemaEtiquetas.API.DTO
+﻿
+using System;
+using System.Collections.Generic;
+
+namespace SistemaEtiquetas.API.DTO
 {
     public class WebhookPedidoDto
     {
@@ -11,6 +15,7 @@
     public class ClienteDto
     {
         public string nome { get; set; }
+        public string cpf { get; set; }
     }
 
     public class ItemDto

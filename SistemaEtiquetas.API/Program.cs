@@ -11,12 +11,61 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=database.db"));
 
+// registra ImpressaoService no DI para ler config.json
+builder.Services.AddSingleton<ImpressaoService>();
+
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 
 var app = builder.Build();
+
+_ = Task.Run(async () =>
+{
+    while (true)
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var etiquetaService = new EtiquetaService();
+        var impressaoService = scope.ServiceProvider.GetRequiredService<ImpressaoService>();
+
+        var itensPendentes = await db.PedidoItens
+            .Include(i => i.Pedido)
+            .Where(i => !i.Impresso)
+            .ToListAsync();
+
+        foreach (var item in itensPendentes)
+        {
+            try
+            {
+                for (int i = 0; i < item.Quantidade; i++)
+                {
+                    var zpl = etiquetaService.GerarZpl(item.Pedido, item);
+
+                    var sucesso = impressaoService.Imprimir(zpl, out string erro);
+
+                    if (!sucesso)
+                        throw new Exception(erro);
+                }
+
+                item.Impresso = true;
+                item.Erro = false;
+                item.ErroMensagem = null;
+            }
+            catch (Exception ex)
+            {
+                item.Erro = true;
+                item.ErroMensagem = ex.Message;
+            }
+        }
+
+        await db.SaveChangesAsync();
+
+        await Task.Delay(TimeSpan.FromMinutes(2)); // roda a cada 2 min
+    }
+});
 
 app.MapPost("/pedidos", async (AppDbContext db, Pedido pedido) =>
 {
@@ -89,7 +138,8 @@ app.MapPost("/webhook/pedido", async (AppDbContext db, HttpRequest request) =>
     {
         PedidoExternoId = pedidoDto.id.ToString(),
         NomeCliente = pedidoDto.cliente?.nome,
-        DataPedido = pedidoDto.data_criacao
+        DataPedido = pedidoDto.data_criacao,
+        ClienteCpf = pedidoDto.cliente?.cpf
     };
 
     foreach (var item in pedidoDto.itens)
@@ -115,7 +165,7 @@ app.MapPost("/imprimir", async (AppDbContext db) =>
         .ToListAsync();
 
     var etiquetaService = new EtiquetaService();
-    var impressaoService = new ImpressaoService();
+    var impressaoService = app.Services.GetRequiredService<ImpressaoService>();
 
     foreach (var pedido in pedidos)
     {
@@ -160,12 +210,12 @@ app.MapPost("/reimprimir/{itemId}", async (AppDbContext db, int itemId) =>
         return Results.NotFound();
 
     var etiquetaService = new EtiquetaService();
-    var impressaoService = new ImpressaoService();
+    var impressaoService = app.Services.GetRequiredService<ImpressaoService>();
 
     for (int i = 0; i < item.Quantidade; i++)
     {
         var zpl = etiquetaService.GerarZpl(item.Pedido, item);
-        impressaoService.Imprimir(zpl);
+        impressaoService.Imprimir(zpl, out _);
     }
 
     return Results.Ok("Reimpressão feita");

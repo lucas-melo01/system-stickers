@@ -1,0 +1,33 @@
+﻿@page
+@model IndexModel
+
+<h2>📦 Pedidos</h2>
+
+<table class="table table-striped mt-4">
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var pedido in Model.Pedidos)
+        {
+            <tr>
+                <td>@pedido.NomeCliente</td>
+                <td>@pedido.DataPedido.ToString("dd/MM/yyyy")</td>
+                <td>
+                    @if (pedido.Itens.All(i => i.Impresso))
+                    {
+                        <span class="badge bg-success">Impresso</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">Pendente</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

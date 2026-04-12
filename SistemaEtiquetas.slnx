@@ -2,4 +2,5 @@
   <Project Path="SistemaEtiquetas.API/SistemaEtiquetas.API.csproj" />
   <Project Path="SistemaEtiquetas.Domain/SistemaEtiquetas.Domain.csproj" />
   <Project Path="SistemaEtiquetas.Infrastructure/SistemaEtiquetas.Infrastructure.csproj" />
+  <Project Path="SistemaEtiquetas.UI/SistemaEtiquetas.UI.csproj" />
 </Solution>

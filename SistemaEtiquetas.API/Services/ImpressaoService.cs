@@ -1,26 +1,32 @@
-﻿using System.Diagnostics;
+﻿using System.Net.Sockets;
+using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace SistemaEtiquetas.API.Services
 {
     public class ImpressaoService
     {
+        private readonly string _ip;
+        private readonly int _porta;
+
+        public ImpressaoService(IConfiguration config)
+        {
+            _ip = config["Impressora:Ip"];
+            _porta = int.TryParse(config["Impressora:Porta"], out var p) ? p : 9100;
+        }
+
         public bool Imprimir(string zpl, out string erro)
         {
             try
             {
-                var caminho = Path.Combine(Directory.GetCurrentDirectory(), "etiqueta.txt");
+                using var client = new TcpClient();
+                client.Connect(_ip, _porta);
+                using var stream = client.GetStream();
 
-                File.WriteAllText(caminho, zpl);
+                var bytes = Encoding.UTF8.GetBytes(zpl);
 
-                var psi = new ProcessStartInfo
-                {
-                    FileName = caminho,
-                    Verb = "print",
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-
-                Process.Start(psi);
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush();
 
                 erro = null;
                 return true;
