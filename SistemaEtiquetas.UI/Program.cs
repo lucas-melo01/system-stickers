@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.Diagnostics;
 
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddScoped<EtiquetaService>();
 
 // Configure Postgres (Supabase) connection. Prefer environment variable "DATABASE_URL".
 // Fallback to the user-provided Supabase connection string if not set.

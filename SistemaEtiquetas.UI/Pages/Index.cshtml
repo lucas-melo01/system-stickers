@@ -1,16 +1,52 @@
 ﻿@page
 @model IndexModel
 
-<h2 style="margin-top: 3%">📦 Pedidos</h2>
+<div class="d-flex justify-content-between align-items-center mb-4" style="margin-top: 3%">
+    <h2 class="mb-0">📦 Pedidos</h2>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPedidoModal" style="background-color: #001623; color: #FFF200; border: none; font-weight: bold;">
+        ➕ Adicionar Pedido
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Erro!</strong> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Sucesso!</strong> @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 <form method="get" class="mb-3">
-    <div class="input-group">
-        <input type="text" class="form-control" placeholder="Buscar por ID, Nome ou CPF..." name="searchTerm" value="@Model.SearchTerm" />
-        <button class="btn btn-primary" type="submit">🔍 Buscar</button>
-        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
-        {
-            <a href="/" class="btn btn-secondary">Limpar</a>
-        }
+    <div class="row">
+        <div class="col-md-8">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Buscar por ID, Nome ou CPF..." name="searchTerm" value="@Model.SearchTerm" />
+                <button class="btn btn-primary" type="submit">🔍 Buscar</button>
+                @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+                {
+                    <a href="/" class="btn btn-secondary">Limpar</a>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text">📅 Data</span>
+                <input type="date" class="form-control" name="dataPedido" value="@Model.DataPedido?.ToString("yyyy-MM-dd")" />
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+                @if (Model.DataPedido.HasValue)
+                {
+                    <a href="/" class="btn btn-secondary">Limpar</a>
+                }
+            </div>
+        </div>
     </div>
 </form>
 
@@ -21,24 +57,22 @@
             <th>Id Pedido</th>
             <th>Nome Cliente - CPF</th>
             <th>Produto - Cor - Tamanho</th>
+            <th>Quantidade</th>
             <th>Status</th>
+            <th>Ações</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var pedido in Model.Pedidos)
+        @foreach (var item in Model.PedidoItens)
         {
             <tr>
-                <td>@pedido.DataPedido.ToString("dd/MM/yyyy")</td>
-                <td>@pedido.Id</td>
-                <td>@pedido.NomeCliente - @pedido.ClienteCpf</td>
+                <td>@item.DataPedido.ToString("dd/MM/yyyy")</td>
+                <td>@item.PedidoExternoId</td>
+                <td>@item.NomeCliente - @item.ClienteCpf</td>
+                <td>@item.Produto - @(item.Cor ?? "N/A") - @(item.Tamanho ?? "N/A")</td>
+                <td>@item.Quantidade</td>
                 <td>
-                    @foreach (var item in pedido.Itens)
-                    {
-                        <div>@item.Produto - @(item.Cor ?? "N/A") - @(item.Tamanho ?? "N/A")</div>
-                    }
-                </td>
-                <td>
-                    @if (pedido.Itens.All(i => i.Impresso))
+                    @if (item.Impresso)
                     {
                         <span class="badge bg-success">Impresso</span>
                     }
@@ -47,7 +81,347 @@
                         <span class="badge bg-warning">Pendente</span>
                     }
                 </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editPedidoModal" onclick="prepareEditModal(@item.PedidoId, @item.PedidoItemId, '@item.Produto', '@(item.Cor ?? "")', '@(item.Tamanho ?? "")', @item.Quantidade)" style="background-color: #001623; border: none; color: #FFF200;">
+                        ✏️ Editar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-info" onclick="previewEtiqueta(@item.PedidoId, @item.PedidoItemId)" style="background-color: #001623; border: none; color: #FFF200;">
+                        🖨️ Imprimir
+                    </button>
+                </td>
             </tr>
         }
     </tbody>
 </table>
+
+<!-- Modal para Adicionar Pedido -->
+<div class="modal fade" id="addPedidoModal" tabindex="-1" aria-labelledby="addPedidoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPedidoModalLabel">➕ Adicionar Novo Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="AddPedido" id="addPedidoForm">
+                <div class="modal-body">
+                    <!-- Dados do Pedido -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="idExterno" class="form-label">ID Externo do Pedido *</label>
+                            <input type="text" class="form-control" id="idExterno" name="AddPedidoModel.IdExterno" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="dataPedido" class="form-label">Data do Pedido *</label>
+                            <input type="datetime-local" class="form-control" id="dataPedido" name="AddPedidoModel.DataPedido" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="nomeCliente" class="form-label">Nome do Cliente *</label>
+                            <input type="text" class="form-control" id="nomeCliente" name="AddPedidoModel.NomeCliente" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cpfCliente" class="form-label">CPF do Cliente *</label>
+                            <input type="text" class="form-control" id="cpfCliente" name="AddPedidoModel.ClienteCpf" placeholder="000.000.000-00" required>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Itens -->
+                    <div class="mb-3">
+                        <h6>Itens do Pedido *</h6>
+                        <table class="table table-bordered" id="itensTable">
+                            <thead>
+                                <tr class="table-secondary">
+                                    <th>Produto</th>
+                                    <th>SKU</th>
+                                    <th>Cor</th>
+                                    <th>Tamanho</th>
+                                    <th width="100">Quantidade</th>
+                                    <th width="80">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itensTableBody">
+                                <tr class="item-row">
+                                    <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Produto" placeholder="Ex: Camiseta" required></td>
+                                    <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].SKU" placeholder="Ex: SKU001"></td>
+                                    <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Cor" placeholder="Ex: Azul"></td>
+                                    <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Tamanho" placeholder="Ex: M"></td>
+                                    <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Quantidade" value="1" min="1" required></td>
+                                    <td><button type="button" class="btn btn-sm btn-danger btn-remove-item">Remover</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-sm btn-primary" id="btnAddItem">➕ Adicionar Item</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">💾 Salvar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Editar Pedido -->
+<div class="modal fade" id="editPedidoModal" tabindex="-1" aria-labelledby="editPedidoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPedidoModalLabel">✏️ Editar Item do Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="EditPedidoItem" id="editPedidoForm">
+                <div class="modal-body">
+                    <input type="hidden" id="pedidoId" name="pedidoId" />
+                    <input type="hidden" id="itemId" name="itemId" />
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editProduto" class="form-label">Produto *</label>
+                            <input type="text" class="form-control" id="editProduto" name="produto" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editCor" class="form-label">Cor</label>
+                            <input type="text" class="form-control" id="editCor" name="cor">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editTamanho" class="form-label">Tamanho</label>
+                            <input type="text" class="form-control" id="editTamanho" name="tamanho">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editQuantidade" class="form-label">Quantidade *</label>
+                            <input type="number" class="form-control" id="editQuantidade" name="quantidade" min="1" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" style="background-color: #001623; border: none; color: #FFF200;">💾 Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Preview da Etiqueta -->
+<div class="modal fade" id="printPreviewModal" tabindex="-1" aria-labelledby="printPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="printPreviewModalLabel">🖨️ Preview da Etiqueta ZPL</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Informação:</strong> Copie o código ZPL abaixo para testar em um visualizador online ou envie diretamente para a impressora.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Dados da Etiqueta:</strong></label>
+                    <p id="etiquetaInfo"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="zplCode" class="form-label"><strong>Código ZPL:</strong></label>
+                    <textarea id="zplCode" class="form-control" rows="12" readonly></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="copiarZpl()" style="background-color: #001623; border: none; color: #FFF200;">
+                    📋 Copiar ZPL
+                </button>
+                <a href="https://labelary.com/viewer.html" target="_blank" class="btn btn-secondary">
+                    🔗 Testar Online (Labelary)
+                </a>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-success" onclick="confirmarImpressao()" style="background-color: #001623; border: none; color: #FFF200;">
+                    ✅ Confirmar e Marcar como Impresso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPrintData = null;
+
+    async function previewEtiqueta(pedidoId, itemId) {
+        try {
+            const response = await fetch(`/?handler=print&pedidoId=${pedidoId}&itemId=${itemId}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentPrintData = { pedidoId, itemId, ...data };
+                document.getElementById('zplCode').value = data.zpl;
+                document.getElementById('etiquetaInfo').innerHTML = `
+                    <strong>Pedido:</strong> ${data.pedidoExternoId}<br>
+                    <strong>Produto:</strong> ${data.produto}<br>
+                    <strong>Cliente:</strong> ${data.cliente}
+                `;
+
+                const modal = new bootstrap.Modal(document.getElementById('printPreviewModal'));
+                modal.show();
+            } else {
+                alert('Erro: ' + (data.error || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao gerar etiqueta: ' + error.message);
+        }
+    }
+
+    function copiarZpl() {
+        const zplCode = document.getElementById('zplCode');
+        zplCode.select();
+        document.execCommand('copy');
+
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copiado!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    async function confirmarImpressao() {
+        if (!currentPrintData) return;
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            // Fazer POST para marcar como impresso
+            const response = await fetch('/?handler=confirmprint', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    pedidoId: currentPrintData.pedidoId,
+                    itemId: currentPrintData.itemId
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('printPreviewModal'));
+                modal.hide();
+
+                // Recarregar a página para atualizar o status
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            } else {
+                alert('Erro ao confirmar impressão: ' + (data.error || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro: ' + error.message);
+        }
+    }
+
+    function prepareEditModal(pedidoId, itemId, produto, cor, tamanho, quantidade) {
+        document.getElementById('pedidoId').value = pedidoId;
+        document.getElementById('itemId').value = itemId;
+        document.getElementById('editProduto').value = produto;
+        document.getElementById('editCor').value = cor;
+        document.getElementById('editTamanho').value = tamanho;
+        document.getElementById('editQuantidade').value = quantidade;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        let itemCount = 1;
+
+        // Adicionar novo item
+        document.getElementById('btnAddItem').addEventListener('click', function () {
+            const tbody = document.getElementById('itensTableBody');
+            const row = document.createElement('tr');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Produto" placeholder="Ex: Camiseta" required></td>
+                <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].SKU" placeholder="Ex: SKU001"></td>
+                <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Cor" placeholder="Ex: Azul"></td>
+                <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Tamanho" placeholder="Ex: M"></td>
+                <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Quantidade" value="1" min="1" required></td>
+                <td><button type="button" class="btn btn-sm btn-danger btn-remove-item">Remover</button></td>
+            `;
+            tbody.appendChild(row);
+            itemCount++;
+
+            // Adicionar listener ao novo botão remover
+            row.querySelector('.btn-remove-item').addEventListener('click', function () {
+                if (document.querySelectorAll('.item-row').length > 1) {
+                    row.remove();
+                } else {
+                    alert('Você deve manter pelo menos um item!');
+                }
+            });
+        });
+
+        // Remover item
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('btn-remove-item')) {
+                e.preventDefault();
+                const row = e.target.closest('.item-row');
+                if (document.querySelectorAll('.item-row').length > 1) {
+                    row.remove();
+                } else {
+                    alert('Você deve manter pelo menos um item!');
+                }
+            }
+        });
+
+        // Validar formulário antes de enviar
+        document.getElementById('addPedidoForm').addEventListener('submit', function (e) {
+            const idExterno = document.getElementById('idExterno').value;
+            const nomeCliente = document.getElementById('nomeCliente').value;
+            const cpf = document.getElementById('cpfCliente').value;
+            const dataPedido = document.getElementById('dataPedido').value;
+            const itens = document.querySelectorAll('.item-row');
+
+            if (!idExterno || !nomeCliente || !cpf || !dataPedido) {
+                e.preventDefault();
+                alert('Preencha todos os campos obrigatórios do pedido!');
+                return false;
+            }
+
+            if (itens.length === 0) {
+                e.preventDefault();
+                alert('Adicione pelo menos um item ao pedido!');
+                return false;
+            }
+
+            // Validar CPF (formato básico)
+            const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/;
+            if (!cpfRegex.test(cpf)) {
+                e.preventDefault();
+                alert('CPF inválido! Use o formato: 000.000.000-00 ou 00000000000');
+                return false;
+            }
+
+            // Validar se há pelo menos um produto preenchido
+            let temProduto = false;
+            itens.forEach(item => {
+                const produto = item.querySelector('input[name*=".Produto"]').value;
+                if (produto.trim()) {
+                    temProduto = true;
+                }
+            });
+
+            if (!temProduto) {
+                e.preventDefault();
+                alert('Adicione pelo menos um produto aos itens!');
+                return false;
+            }
+        });
+    });
+</script>
