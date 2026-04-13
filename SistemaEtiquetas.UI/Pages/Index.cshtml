@@ -1,13 +1,26 @@
 ﻿@page
 @model IndexModel
 
-<h2>📦 Pedidos</h2>
+<h2 style="margin-top: 3%">📦 Pedidos</h2>
+
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" class="form-control" placeholder="Buscar por ID, Nome ou CPF..." name="searchTerm" value="@Model.SearchTerm" />
+        <button class="btn btn-primary" type="submit">🔍 Buscar</button>
+        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+        {
+            <a href="/" class="btn btn-secondary">Limpar</a>
+        }
+    </div>
+</form>
 
 <table class="table table-striped mt-4">
     <thead>
         <tr>
-            <th>Cliente</th>
-            <th>Data</th>
+            <th>Data Pedido</th>
+            <th>Id Pedido</th>
+            <th>Nome Cliente - CPF</th>
+            <th>Produto - Cor - Tamanho</th>
             <th>Status</th>
         </tr>
     </thead>
@@ -15,8 +28,15 @@
         @foreach (var pedido in Model.Pedidos)
         {
             <tr>
-                <td>@pedido.NomeCliente</td>
                 <td>@pedido.DataPedido.ToString("dd/MM/yyyy")</td>
+                <td>@pedido.Id</td>
+                <td>@pedido.NomeCliente - @pedido.ClienteCpf</td>
+                <td>
+                    @foreach (var item in pedido.Itens)
+                    {
+                        <div>@item.Produto - @(item.Cor ?? "N/A") - @(item.Tamanho ?? "N/A")</div>
+                    }
+                </td>
                 <td>
                     @if (pedido.Itens.All(i => i.Impresso))
                     {

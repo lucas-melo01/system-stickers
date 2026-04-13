@@ -9,30 +9,71 @@
 
     <style>
             body {
-                overflow-x: hidden;
+                background-color: #f8fafc;
             }
 
             .sidebar {
                 height: 100vh;
-                background-color: #1f2937;
+                background-color: #001623;
                 color: white;
             }
 
-            .sidebar a {
-                color: #cbd5e1;
-                text-decoration: none;
-                display: block;
-                padding: 12px;
+                .sidebar a {
+                    color: #94a3b8;
+                    padding: 12px;
+                    display: block;
+                    border-left: 3px solid transparent;
+                }
+
+                    .sidebar a:hover {
+                        background-color: #0f172a;
+                        color: #FFF200;
+                        border-left: 3px solid #FFF200;
+                    }
+
+                .sidebar .active {
+                    background-color: #0f172a;
+                    color: #FFF200;
+                    border-left: 3px solid #FFF200;
+                }
+
+            .topbar {
+                background-color: white;
+                border-bottom: 1px solid #e5e7eb;
+                padding: 10px 20px;
             }
 
-            .sidebar a:hover {
-                background-color: #374151;
-                color: white;
+            .badge-warning {
+                background-color: #FFF200;
+                color: black;
             }
 
-            .content {
-                padding: 20px;
+            .titulo {
+                color: #FFF200;
             }
+
+            .btn-primary {
+                background-color: #001623;
+                border: none;
+            }
+
+                .btn-primary:hover {
+                    background-color: #0f172a;
+                }
+
+            .btn-warning {
+                background-color: #FFF200;
+                border: none;
+                color: black;
+            }
+
+                .btn-warning:hover {
+                    background-color: #e6d800;
+                }
+
+                a {
+                    text-decoration: none !important;
+                }
     </style>
 </head>
 <body>
@@ -42,7 +83,7 @@
 
             <!-- MENU LATERAL -->
             <div class="col-2 sidebar">
-                <h4 class="p-3">🖨️ Etiquetas</h4>
+                <h4 class="p-3 titulo">Resume + DonnaKora</h4>
 
                 <a href="/">📋 Pedidos</a>
                 <a href="/Config">⚙️ Configurações</a>
