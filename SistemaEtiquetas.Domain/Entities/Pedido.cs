@@ -19,9 +19,21 @@ namespace SistemaEtiquetas.Domain.Entities
         // CPF do cliente recebido no webhook
         public string? ClienteCpf { get; set; }
 
+        // Vendedor (Resume, DonnaKora, Manual, etc)
+        public string? Vendedor { get; set; }
+
         public DateTime DataPedido { get; set; }
 
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+
+        // Forma de pagamento
+        public string? FormaPagamento { get; set; }
+
+        // Tipo de envio (Pac, Sedex, etc)
+        public string? TipoEnvio { get; set; }
+
+        // Valor do frete
+        public decimal ValorFrete { get; set; } = 0;
 
         public List<PedidoItem> Itens { get; set; } = new();
     }

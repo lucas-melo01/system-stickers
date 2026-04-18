@@ -127,17 +127,49 @@
                         </div>
                     </div>
 
+                    <!-- Informações de Venda e Envio -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="vendedor" class="form-label">Vendedor</label>
+                            <select class="form-control" id="vendedor" name="AddPedidoModel.Vendedor">
+                                <option value="">Selecione...</option>
+                                <option value="Resume">Resume</option>
+                                <option value="DonnaKora">DonnaKora</option>
+                                <option value="Manual">Manual</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="tipoEnvio" class="form-label">Tipo de Envio</label>
+                            <select class="form-control" id="tipoEnvio" name="AddPedidoModel.TipoEnvio">
+                                <option value="">Selecione...</option>
+                                <option value="PAC">PAC</option>
+                                <option value="SEDEX">SEDEX</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="formaPagamento" class="form-label">Forma de Pagamento</label>
+                            <input type="text" class="form-control" id="formaPagamento" name="AddPedidoModel.FormaPagamento" placeholder="Ex: Crédito">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="valorFrete" class="form-label">R$ Frete</label>
+                            <input type="number" class="form-control" id="valorFrete" name="AddPedidoModel.ValorFrete" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                    </div>
+
                     <!-- Tabela de Itens -->
                     <div class="mb-3">
                         <h6>Itens do Pedido *</h6>
-                        <table class="table table-bordered" id="itensTable">
+                        <table class="table table-bordered table-sm" id="itensTable">
                             <thead>
                                 <tr class="table-secondary">
                                     <th>Produto</th>
                                     <th>SKU</th>
                                     <th>Cor</th>
                                     <th>Tamanho</th>
-                                    <th width="100">Quantidade</th>
+                                    <th width="80">Qtd</th>
+                                    <th width="100">R$ Custo</th>
+                                    <th width="100">R$ Venda</th>
                                     <th width="80">Ação</th>
                                 </tr>
                             </thead>
@@ -148,6 +180,8 @@
                                     <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Cor" placeholder="Ex: Azul"></td>
                                     <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Tamanho" placeholder="Ex: M"></td>
                                     <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Quantidade" value="1" min="1" required></td>
+                                    <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].ValorCusto" placeholder="0.00" step="0.01" min="0"></td>
+                                    <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].ValorVenda" placeholder="0.00" step="0.01" min="0"></td>
                                     <td><button type="button" class="btn btn-sm btn-danger btn-remove-item">Remover</button></td>
                                 </tr>
                             </tbody>
@@ -231,9 +265,6 @@
                 <button type="button" class="btn btn-primary" onclick="copiarZpl()" style="background-color: #001623; border: none; color: #FFF200;">
                     📋 Copiar ZPL
                 </button>
-                <a href="https://labelary.com/viewer.html" target="_blank" class="btn btn-secondary">
-                    🔗 Testar Online (Labelary)
-                </a>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -352,6 +383,8 @@
                 <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Cor" placeholder="Ex: Azul"></td>
                 <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Tamanho" placeholder="Ex: M"></td>
                 <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Quantidade" value="1" min="1" required></td>
+                <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].ValorCusto" placeholder="0.00" step="0.01" min="0"></td>
+                <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].ValorVenda" placeholder="0.00" step="0.01" min="0"></td>
                 <td><button type="button" class="btn btn-sm btn-danger btn-remove-item">Remover</button></td>
             `;
             tbody.appendChild(row);

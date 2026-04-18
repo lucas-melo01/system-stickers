@@ -26,5 +26,9 @@ namespace SistemaEtiquetas.Domain.Entities
         public int Quantidade { get; set; }
 
         public bool Impresso { get; set; } = false;
+
+        // Valores monetários
+        public decimal ValorCusto { get; set; } = 0;
+        public decimal ValorVenda { get; set; } = 0;
     }
 }

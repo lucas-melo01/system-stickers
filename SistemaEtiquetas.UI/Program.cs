@@ -2,8 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.Diagnostics;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure culture to pt-BR for currency display (R$ instead of £)
+var ptBr = new CultureInfo("pt-BR");
+CultureInfo.DefaultThreadCurrentCulture = ptBr;
+CultureInfo.DefaultThreadCurrentUICulture = ptBr;
 
 // Add services to the container.
 builder.Services.AddRazorPages();

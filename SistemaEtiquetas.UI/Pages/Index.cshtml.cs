@@ -113,6 +113,10 @@ public class IndexModel : PageModel
                 PedidoExternoId = AddPedidoModel.IdExterno,
                 NomeCliente = AddPedidoModel.NomeCliente,
                 ClienteCpf = AddPedidoModel.ClienteCpf,
+                Vendedor = AddPedidoModel.Vendedor ?? "Manual",
+                TipoEnvio = AddPedidoModel.TipoEnvio,
+                FormaPagamento = AddPedidoModel.FormaPagamento,
+                ValorFrete = AddPedidoModel.ValorFrete,
                 DataPedido = AddPedidoModel.DataPedido.ToUniversalTime(),
                 DataCriacao = DateTime.UtcNow,
                 Itens = new List<PedidoItem>()
@@ -128,6 +132,8 @@ public class IndexModel : PageModel
                     Cor = item.Cor,
                     Tamanho = item.Tamanho,
                     Quantidade = item.Quantidade > 0 ? item.Quantidade : 1,
+                    ValorCusto = item.ValorCusto,
+                    ValorVenda = item.ValorVenda,
                     Impresso = false
                 });
             }
@@ -365,6 +371,14 @@ public class AddPedidoModel
     [Required(ErrorMessage = "Data do Pedido é obrigatória")]
     public DateTime DataPedido { get; set; }
 
+    public string? Vendedor { get; set; }
+
+    public string? TipoEnvio { get; set; }
+
+    public string? FormaPagamento { get; set; }
+
+    public decimal ValorFrete { get; set; } = 0;
+
     public List<AddPedidoItemModel> Itens { get; set; } = new();
 }
 
@@ -375,4 +389,6 @@ public class AddPedidoItemModel
     public string Cor { get; set; }
     public string Tamanho { get; set; }
     public int Quantidade { get; set; } = 1;
+    public decimal ValorCusto { get; set; } = 0;
+    public decimal ValorVenda { get; set; } = 0;
 }

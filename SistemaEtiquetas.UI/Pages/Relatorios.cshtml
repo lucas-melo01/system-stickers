@@ -1,0 +1,114 @@
+@page
+@model RelatoriosModel
+
+<div class="d-flex justify-content-between align-items-center mb-4" style="margin-top: 3%">
+    <h2 class="mb-0">📊 Relatórios de Vendas</h2>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Erro!</strong> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Sucesso!</strong> @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Filtros</h5>
+        <form method="get" class="row">
+            <div class="col-md-5">
+                <label for="dataInicio" class="form-label">Data Inicial *</label>
+                <input type="date" class="form-control" id="dataInicio" name="dataInicio" value="@Model.DataInicio?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-5">
+                <label for="dataFim" class="form-label">Data Final *</label>
+                <input type="date" class="form-control" id="dataFim" name="dataFim" value="@Model.DataFim?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-2">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100" style="background-color: #001623; border: none; color: #FFF200; font-weight: bold;">
+                    🔍 Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Vendas != null && Model.Vendas.Any())
+{
+    <div class="mb-3">
+        <form method="post" asp-page-handler="ExportarExcel">
+            <input type="hidden" name="dataInicio" value="@Model.DataInicio?.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="dataFim" value="@Model.DataFim?.ToString("yyyy-MM-dd")" />
+            <button type="submit" class="btn btn-success" style="background-color: #001623; border: none; color: #FFF200; font-weight: bold;">
+                📥 Exportar para Excel
+            </button>
+        </form>
+    </div>
+
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Data Pedido</th>
+                <th>Código Fornecedor</th>
+                <th>Vendedor</th>
+                <th>Peça</th>
+                <th>Cliente</th>
+                <th>Pac/Sedex</th>
+                <th>R$ Custo</th>
+                <th>R$ Venda</th>
+                <th>Forma de Pagamento</th>
+                <th>R$ Frete</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var venda in Model.Vendas)
+            {
+                <tr>
+                    <td>@venda.DataPedido.ToString("dd/MM/yyyy")</td>
+                    <td>@venda.SKU</td>
+                    <td>
+                        <span class="badge bg-info">@venda.Vendedor</span>
+                    </td>
+                    <td>@venda.Peca</td>
+                    <td>@venda.Cliente</td>
+                    <td>@venda.TipoEnvio</td>
+                    <td>@venda.ValorCusto.ToString("C")</td>
+                    <td>@venda.ValorVenda.ToString("C")</td>
+                    <td>@venda.FormaPagamento</td>
+                    <td>@venda.ValorFrete.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td colspan="6" class="text-end">TOTAL:</td>
+                <td>@Model.Vendas.Sum(v => v.ValorCusto).ToString("C")</td>
+                <td>@Model.Vendas.Sum(v => v.ValorVenda).ToString("C")</td>
+                <td></td>
+                <td>@Model.Vendas.Sum(v => v.ValorFrete).ToString("C")</td>
+            </tr>
+        </tfoot>
+    </table>
+}
+else if (Model.DataInicio.HasValue && Model.DataFim.HasValue)
+{
+    <div class="alert alert-info">
+        <strong>Nenhum pedido encontrado</strong> no período selecionado (de @Model.DataInicio?.ToString("dd/MM/yyyy") a @Model.DataFim?.ToString("dd/MM/yyyy")).
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <strong>Selecione um período</strong> para visualizar os pedidos.
+    </div>
+}

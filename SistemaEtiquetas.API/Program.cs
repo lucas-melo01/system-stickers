@@ -158,12 +158,34 @@ app.MapPost("/webhook/pedido", async (AppDbContext db, HttpRequest request) =>
     }
     dataPedido = dataPedido.ToUniversalTime();
 
+    // Extrair informações de envio
+    var tipoEnvio = pedidoDto.envios?.FirstOrDefault()?.forma_envio?.nome ?? "N/A";
+    var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor ?? pedidoDto.valor_envio;
+
+    // Extrair forma de pagamento
+    var formaPagamento = pedidoDto.pagamentos?.FirstOrDefault()?.forma_pagamento?.nome ?? "N/A";
+
+    // Determinar vendedor baseado no tipo ou marketplace
+    var vendedor = "N/A";
+    if (!string.IsNullOrEmpty(pedidoDto.tipo))
+    {
+        vendedor = pedidoDto.tipo.Contains("resume", StringComparison.OrdinalIgnoreCase) ? "Resume" : "DonnaKora";
+    }
+    else if (!string.IsNullOrEmpty(pedidoDto.marketplace_origem))
+    {
+        vendedor = pedidoDto.marketplace_origem.Contains("resume", StringComparison.OrdinalIgnoreCase) ? "Resume" : "DonnaKora";
+    }
+
     var pedido = new Pedido
     {
         PedidoExternoId = pedidoDto.id.ToString(),
         NomeCliente = pedidoDto.cliente?.nome,
         DataPedido = dataPedido,
-        ClienteCpf = pedidoDto.cliente?.cpf
+        ClienteCpf = pedidoDto.cliente?.cpf,
+        Vendedor = vendedor,
+        TipoEnvio = tipoEnvio,
+        FormaPagamento = formaPagamento,
+        ValorFrete = valorFrete
     };
 
     foreach (var item in pedidoDto.itens)
