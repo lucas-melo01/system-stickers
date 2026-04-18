@@ -15,6 +15,17 @@ var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(databaseUrl));
 
+// Adicionar CORS para permitir requisições de qualquer origem em desenvolvimento
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // registra ImpressaoService no DI para ler config.json
 builder.Services.AddSingleton<ImpressaoService>();
 
@@ -24,6 +35,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 var app = builder.Build();
+
+// Usar CORS
+app.UseCors("AllowAll");
 
 // Apply any pending migrations to ensure database schema matches model (creates identity columns etc.)
 using (var scope = app.Services.CreateScope())
@@ -99,8 +113,13 @@ app.MapPost("/pedidos", async (AppDbContext db, Pedido pedido) =>
 app.MapGet("/pedidos", async (AppDbContext db) =>
 {
     var pedidos = await db.Pedidos.Include(p => p.Itens).ToListAsync();
-    
-    return Results.Ok(pedidos);
+
+    if (!pedidos.Any())
+    {
+        return Results.Ok(new { message = "Nenhum pedido encontrado", data = pedidos });
+    }
+
+    return Results.Ok(new { message = $"Total de {pedidos.Count} pedidos", data = pedidos });
 });
 
 app.MapPost("/config", async (AppDbContext db, Configuracao config) =>
@@ -226,5 +245,21 @@ app.MapPost("/reimprimir/{itemId}", async (AppDbContext db, int itemId) =>
 });
 
 app.MapGet("/", () => "API Rodando 🚀");
+
+app.MapGet("/health", (AppDbContext db) =>
+{
+    try
+    {
+        var canConnect = db.Database.CanConnect();
+
+        return canConnect 
+            ? Results.Ok(new { status = "Healthy ✅", timestamp = DateTime.UtcNow })
+            : Results.StatusCode(503);
+    }
+    catch
+    {
+        return Results.StatusCode(503);
+    }
+});
 
 app.Run();
