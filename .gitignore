@@ -123,3 +123,4 @@ Thumbs.db
 # Optional: Ignore local tool caches
 .tools/
 .vscode-test/
+/SistemaEtiquetas.API/SistemaEtiquetas.API.csproj
