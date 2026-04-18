@@ -16,9 +16,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddScoped<EtiquetaService>();
 
 // Configure Postgres (Supabase) connection. Prefer environment variable "DATABASE_URL".
-// Fallback to the user-provided Supabase connection string if not set.
+// Fallback to appsettings.json configuration if not set.
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? "Host=db.pvmdtjxixrpckfdbrhpz.supabase.co;Username=postgres;Password=%/i_EjK/eq5EV2$;Database=postgres;Port=5432;SSL Mode=Require;Trust Server Certificate=true";
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(databaseUrl));
