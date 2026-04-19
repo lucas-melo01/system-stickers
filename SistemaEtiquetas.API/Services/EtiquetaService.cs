@@ -23,17 +23,21 @@ namespace SistemaEtiquetas.API.Services
             var linha6Sku = sku.Length > 20 ? sku.Substring(0, 20) : sku;
 
             var zpl = $@"^XA
-^CF0,25
+^PW480
+^LL320
+^CF0,24
 
 ^FO20,20^FDNOME: {linha1Nome}^FS
-^FO300,20^FDDATA: {data}^FS
+^FO20,55^FDDATA: {data}^FS
 
-^FO20,70^FDMODELO: {linha2Modelo}^FS
-^FO20,110^FDCOR: {linha3Cor}^FS
-^FO200,110^FDTAM: {linha4Tam}^FS
+^FO20,95^FDMODELO: {linha2Modelo}^FS
 
-^FO20,160^FDCPF: {linha5Cpf}^FS
-^FO300,160^FDSKU: {linha6Sku}^FS
+^FO20,135^FDCOR: {linha3Cor}^FS
+^FO250,135^FDTAM: {linha4Tam}^FS
+
+^FO20,175^FDCPF: {linha5Cpf}^FS
+
+^FO20,215^FDSKU: {linha6Sku}^FS
 
 ^XZ";
 

@@ -26,8 +26,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// registra ImpressaoService no DI para ler config.json
-builder.Services.AddSingleton<ImpressaoService>();
+// registra ImpressaoService no DI para ler configurações do banco de dados
+builder.Services.AddScoped<ImpressaoService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {

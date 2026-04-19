@@ -13,6 +13,7 @@ public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
     private readonly EtiquetaService _etiquetaService;
+    private readonly ImpressaoService _impressaoService;
 
     public List<Pedido> Pedidos { get; set; }
     public List<PedidoItemExibicao> PedidoItens { get; set; }
@@ -26,14 +27,20 @@ public class IndexModel : PageModel
     [BindProperty]
     public AddPedidoModel AddPedidoModel { get; set; }
 
+    [BindProperty]
+    public int PedidoId { get; set; }
+    [BindProperty]
+    public int ItemId { get; set; }
+
     public string ErrorMessage { get; set; }
     public string SuccessMessage { get; set; }
     public string ZplCode { get; set; }
 
-    public IndexModel(AppDbContext db, EtiquetaService etiquetaService)
+    public IndexModel(AppDbContext db, EtiquetaService etiquetaService, ImpressaoService impressaoService)
     {
         _db = db;
         _etiquetaService = etiquetaService;
+        _impressaoService = impressaoService;
     }
 
     public async Task OnGet()
@@ -307,30 +314,43 @@ public class IndexModel : PageModel
         }
     }
 
-    public async Task<IActionResult> OnPostConfirmPrint(int pedidoId, int itemId)
+    public async Task<IActionResult> OnPostConfirmPrint()
     {
         try
         {
             var pedido = await _db.Pedidos
                 .Include(p => p.Itens)
-                .FirstOrDefaultAsync(p => p.Id == pedidoId);
+                .FirstOrDefaultAsync(p => p.Id == PedidoId);
 
             if (pedido == null)
             {
                 return new JsonResult(new { success = false, error = "Pedido não encontrado." });
             }
 
-            var item = pedido.Itens.FirstOrDefault(i => i.Id == itemId);
+            var item = pedido.Itens.FirstOrDefault(i => i.Id == ItemId);
             if (item == null)
             {
                 return new JsonResult(new { success = false, error = "Item não encontrado." });
+            }
+
+            // Gerar ZPL
+            var zpl = _etiquetaService.GerarZpl(pedido, item);
+
+            // Enviar para impressora
+            if (_impressaoService == null)
+            {
+                return new JsonResult(new { success = false, error = "Serviço de impressão não configurado." });
+            }
+            if (!_impressaoService.Imprimir(zpl, out var erro))
+            {
+                return new JsonResult(new { success = false, error = $"Erro ao imprimir: {erro}" });
             }
 
             // Marcar como impresso
             item.Impresso = true;
             await _db.SaveChangesAsync();
 
-            return new JsonResult(new { success = true, message = "Etiqueta marcada como impressa!" });
+            return new JsonResult(new { success = true, message = "Etiqueta impressa e marcada como impressa!" });
         }
         catch (Exception ex)
         {

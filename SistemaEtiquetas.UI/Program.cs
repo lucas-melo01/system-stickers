@@ -14,6 +14,7 @@ CultureInfo.DefaultThreadCurrentUICulture = ptBr;
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<EtiquetaService>();
+builder.Services.AddScoped<ImpressaoService>();
 
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");

@@ -1,19 +1,111 @@
 ﻿@page
+@model ConfigModel
 
-<h2>⚙️ Configuração da Impressora</h2>
-
-<form method="post" class="mt-4">
-
-    <div class="mb-3">
-        <label>IP da Impressora</label>
-        <input type="text" class="form-control" name="Ip" />
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Sucesso!</strong> @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+}
 
-    <div class="mb-3">
-        <label>Porta</label>
-        <input type="number" class="form-control" name="Porta" value="9100" />
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Erro!</strong> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+}
 
-    <button class="btn btn-primary">Salvar</button>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>⚙️ Configuração da Impressora</h2>
 
-</form>
+            <form method="post" asp-page-handler="SaveConfig" class="mt-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="impressoraIp" class="form-label">📍 IP da Impressora *</label>
+                            <input type="text" class="form-control" id="impressoraIp" name="impressoraIp" 
+                                   value="@Model.ImpressoraIp" placeholder="Ex: 192.168.1.100" required />
+                            <small class="form-text text-muted">Digite o IP da impressora térmica na rede</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="impressoraPorta" class="form-label">🔌 Porta *</label>
+                            <input type="number" class="form-control" id="impressoraPorta" name="impressoraPorta" 
+                                   value="@Model.ImpressoraPorta" min="1" max="65535" placeholder="Ex: 9100" required />
+                            <small class="form-text text-muted">Porta de comunicação (geralmente 9100 para Zebra)</small>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success" style="background-color: #001623; border: none; color: #FFF200;">
+                                💾 Salvar Configurações
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="testarConexao()">
+                                🔗 Testar Conexão
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">ℹ️ Como Encontrar o IP</h5>
+                    <ul>
+                        <li>Acesse o painel de controle da impressora</li>
+                        <li>Procure por "Network Settings" ou "Configurações de Rede"</li>
+                        <li>Localize o IPv4 Address</li>
+                        <li>Ou imprima uma página de configuração na impressora</li>
+                    </ul>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.TestMessage))
+            {
+                <div class="card mt-3 @(Model.TestSuccess ? "border-success" : "border-danger")">
+                    <div class="card-body @(Model.TestSuccess ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
+                        <h6 class="card-title">🧪 Resultado do Teste</h6>
+                        <p>@Model.TestMessage</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    async function testarConexao() {
+        const ip = document.getElementById('impressoraIp').value;
+        const porta = document.getElementById('impressoraPorta').value;
+
+        if (!ip || !porta) {
+            alert('Por favor, preencha IP e Porta primeiro');
+            return;
+        }
+
+        try {
+            const response = await fetch('/?handler=testconnection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `ip=${encodeURIComponent(ip)}&porta=${encodeURIComponent(porta)}`
+            });
+
+            if (response.ok) {
+                alert('✅ Conexão com a impressora bem-sucedida!');
+            } else {
+                alert('❌ Falha na conexão. Verifique IP e Porta.');
+            }
+        } catch (error) {
+            alert('❌ Erro ao testar: ' + error.message);
+        }
+    }
+</script>

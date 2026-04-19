@@ -21,5 +21,11 @@ namespace SistemaEtiquetas.Domain.Entities
         public DateTime TokenExpiration { get; set; }
 
         public int SyncIntervalSeconds { get; set; } = 60;
+
+        // Configurações de Impressora
+        public string ImpressoraIp { get; set; } = "127.0.0.1";
+
+        public int ImpressoraPorta { get; set; } = 9100;
     }
 }
+

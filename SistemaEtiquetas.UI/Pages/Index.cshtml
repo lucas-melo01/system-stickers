@@ -327,18 +327,15 @@
 
         try {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const formData = new FormData();
+            formData.append('pedidoId', currentPrintData.pedidoId);
+            formData.append('itemId', currentPrintData.itemId);
+            formData.append('__RequestVerificationToken', token);
 
             // Fazer POST para marcar como impresso
             const response = await fetch('/?handler=confirmprint', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': token
-                },
-                body: JSON.stringify({
-                    pedidoId: currentPrintData.pedidoId,
-                    itemId: currentPrintData.itemId
-                })
+                body: formData
             });
 
             const data = await response.json();
