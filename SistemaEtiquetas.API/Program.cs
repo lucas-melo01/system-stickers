@@ -175,7 +175,8 @@ app.MapPost("/webhook/pedido/resumemodas", async (AppDbContext db, HttpRequest r
         Vendedor = "Resume Modas",
         TipoEnvio = tipoEnvio,
         FormaPagamento = formaPagamento,
-        ValorFrete = valorFrete
+        ValorFrete = valorFrete,
+        jsonWebhook = payload
     };
     foreach (var item in pedidoDto.itens)
     {
@@ -215,7 +216,8 @@ app.MapPost("/webhook/pedido/donnakora", async (AppDbContext db, HttpRequest req
         Vendedor = "DonnaKora",
         TipoEnvio = tipoEnvio,
         FormaPagamento = formaPagamento,
-        ValorFrete = valorFrete
+        ValorFrete = valorFrete,
+        jsonWebhook = payload
     };
     foreach (var item in pedidoDto.itens)
     {

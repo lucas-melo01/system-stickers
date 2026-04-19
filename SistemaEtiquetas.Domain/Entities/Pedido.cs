@@ -35,6 +35,9 @@ namespace SistemaEtiquetas.Domain.Entities
         // Valor do frete
         public decimal ValorFrete { get; set; } = 0;
 
+        // JSON completo recebido do webhook para auditoria e mapeamento
+        public string? jsonWebhook { get; set; }
+
         public List<PedidoItem> Itens { get; set; } = new();
     }
 }
