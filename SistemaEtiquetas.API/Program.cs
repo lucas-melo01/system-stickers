@@ -150,63 +150,33 @@ app.MapGet("/config", async (AppDbContext db) =>
     return Results.Ok(config);
 });
 
-app.MapPost("/webhook/pedido", async (AppDbContext db, HttpRequest request) =>
+
+// Webhook Resume Modas
+app.MapPost("/webhook/pedido/resumemodas", async (AppDbContext db, HttpRequest request) =>
 {
     var payload = await new StreamReader(request.Body).ReadToEndAsync();
-
-    var options = new JsonSerializerOptions
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
+    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     var pedidoDto = JsonSerializer.Deserialize<WebhookPedidoDto>(payload, options);
-
-    // 🔒 evita duplicidade
-    var existe = await db.Pedidos
-        .AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString());
-
-    if (existe)
-        return Results.Ok("Pedido já processado");
-
-    // Normalize incoming date to UTC to prevent Npgsql timestamp with time zone errors
+    var existe = await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString());
+    if (existe) return Results.Ok("Pedido já processado");
     var dataPedido = pedidoDto.data_criacao;
     if (dataPedido.Kind == DateTimeKind.Unspecified)
-    {
-        // Assume incoming timestamp is UTC when kind is unspecified; adjust if your source uses local time
         dataPedido = DateTime.SpecifyKind(dataPedido, DateTimeKind.Utc);
-    }
     dataPedido = dataPedido.ToUniversalTime();
-
-    // Extrair informações de envio
     var tipoEnvio = pedidoDto.envios?.FirstOrDefault()?.forma_envio?.nome ?? "N/A";
     var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor ?? pedidoDto.valor_envio;
-
-    // Extrair forma de pagamento
     var formaPagamento = pedidoDto.pagamentos?.FirstOrDefault()?.forma_pagamento?.nome ?? "N/A";
-
-    // Determinar vendedor baseado no tipo ou marketplace
-    var vendedor = "N/A";
-    if (!string.IsNullOrEmpty(pedidoDto.tipo))
-    {
-        vendedor = pedidoDto.tipo.Contains("resume", StringComparison.OrdinalIgnoreCase) ? "Resume" : "DonnaKora";
-    }
-    else if (!string.IsNullOrEmpty(pedidoDto.marketplace_origem))
-    {
-        vendedor = pedidoDto.marketplace_origem.Contains("resume", StringComparison.OrdinalIgnoreCase) ? "Resume" : "DonnaKora";
-    }
-
     var pedido = new Pedido
     {
         PedidoExternoId = pedidoDto.id.ToString(),
         NomeCliente = pedidoDto.cliente?.nome,
         DataPedido = dataPedido,
         ClienteCpf = pedidoDto.cliente?.cpf,
-        Vendedor = vendedor,
+        Vendedor = "Resume Modas",
         TipoEnvio = tipoEnvio,
         FormaPagamento = formaPagamento,
         ValorFrete = valorFrete
     };
-
     foreach (var item in pedidoDto.itens)
     {
         pedido.Itens.Add(new PedidoItem
@@ -216,10 +186,48 @@ app.MapPost("/webhook/pedido", async (AppDbContext db, HttpRequest request) =>
             Quantidade = item.quantidade
         });
     }
-
     db.Pedidos.Add(pedido);
     await db.SaveChangesAsync();
+    return Results.Ok("Pedido salvo com sucesso");
+});
 
+// Webhook DonnaKora
+app.MapPost("/webhook/pedido/donnakora", async (AppDbContext db, HttpRequest request) =>
+{
+    var payload = await new StreamReader(request.Body).ReadToEndAsync();
+    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    var pedidoDto = JsonSerializer.Deserialize<WebhookPedidoDto>(payload, options);
+    var existe = await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString());
+    if (existe) return Results.Ok("Pedido já processado");
+    var dataPedido = pedidoDto.data_criacao;
+    if (dataPedido.Kind == DateTimeKind.Unspecified)
+        dataPedido = DateTime.SpecifyKind(dataPedido, DateTimeKind.Utc);
+    dataPedido = dataPedido.ToUniversalTime();
+    var tipoEnvio = pedidoDto.envios?.FirstOrDefault()?.forma_envio?.nome ?? "N/A";
+    var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor ?? pedidoDto.valor_envio;
+    var formaPagamento = pedidoDto.pagamentos?.FirstOrDefault()?.forma_pagamento?.nome ?? "N/A";
+    var pedido = new Pedido
+    {
+        PedidoExternoId = pedidoDto.id.ToString(),
+        NomeCliente = pedidoDto.cliente?.nome,
+        DataPedido = dataPedido,
+        ClienteCpf = pedidoDto.cliente?.cpf,
+        Vendedor = "DonnaKora",
+        TipoEnvio = tipoEnvio,
+        FormaPagamento = formaPagamento,
+        ValorFrete = valorFrete
+    };
+    foreach (var item in pedidoDto.itens)
+    {
+        pedido.Itens.Add(new PedidoItem
+        {
+            Produto = item.nome,
+            SKU = item.sku,
+            Quantidade = item.quantidade
+        });
+    }
+    db.Pedidos.Add(pedido);
+    await db.SaveChangesAsync();
     return Results.Ok("Pedido salvo com sucesso");
 });
 
