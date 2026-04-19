@@ -8,9 +8,9 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Postgres (Supabase) connection. Prefer environment variable "DATABASE_URL", fallback to appsettings.json
+// 🔒 TESTE: Connection string hardcoded (REMOVER EM PRODUÇÃO!)
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    ?? "Host=db.pvmdtjxixrpckfdbrhpz.supabase.co;Username=postgres;Password=Lucasmelo001;Database=postgres;Port=5432;SSL Mode=Require;Trust Server Certificate=true";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(databaseUrl));

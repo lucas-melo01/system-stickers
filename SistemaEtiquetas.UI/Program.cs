@@ -15,13 +15,19 @@ CultureInfo.DefaultThreadCurrentUICulture = ptBr;
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<EtiquetaService>();
 
-// Configure Postgres (Supabase) connection. Prefer environment variable "DATABASE_URL".
-// Fallback to appsettings.json configuration if not set.
+// Configure Postgres (Supabase) connection. 
+// 🔒 TESTE: Connection string hardcoded (REMOVER EM PRODUÇÃO!)
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    ?? "Host=db.pvmdtjxixrpckfdbrhpz.supabase.co;Username=postgres;Password=Lucasmelo001;Database=postgres;Port=5432;SSL Mode=Require;Trust Server Certificate=true";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(databaseUrl));
+    options.UseNpgsql(
+        databaseUrl,
+        npgsqlOptions => npgsqlOptions
+            .CommandTimeout(30)
+            .EnableRetryOnFailure(maxRetryCount: 5)
+    )
+);
 
 var app = builder.Build();
 
@@ -89,10 +95,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Ensure database exists and apply migrations so the UI sees the same schema
-using (var scope = app.Services.CreateScope())
+// 🚨 COMENTADO TEMPORARIAMENTE: Se Supabase estiver lento/fora, descomente depois
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"⚠️ Aviso: Não conseguiu aplicar migrations: {ex.Message}");
 }
 
 app.UseHttpsRedirection();
