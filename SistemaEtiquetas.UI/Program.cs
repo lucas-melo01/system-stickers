@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Infrastructure.Data;
+using SistemaEtiquetas.UI.Services;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -15,6 +16,17 @@ CultureInfo.DefaultThreadCurrentUICulture = ptBr;
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<EtiquetaService>();
 builder.Services.AddScoped<ImpressaoService>();
+
+// Registrar HttpClient para chamadas à API
+var apiUrl = builder.Configuration["Api:Url"] ?? "http://localhost:5000";
+builder.Services.AddHttpClient("API", client =>
+{
+    client.BaseAddress = new Uri(apiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// Registrar ApiService
+builder.Services.AddScoped<ApiService>();
 
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");

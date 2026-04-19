@@ -24,6 +24,9 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public DateTime? DataPedido { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+
     [BindProperty]
     public AddPedidoModel AddPedidoModel { get; set; }
 
@@ -36,6 +39,11 @@ public class IndexModel : PageModel
     public string SuccessMessage { get; set; }
     public string ZplCode { get; set; }
 
+    // Propriedades de paginação
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public const int ItemsPerPage = 15;
+
     public IndexModel(AppDbContext db, EtiquetaService etiquetaService, ImpressaoService impressaoService)
     {
         _db = db;
@@ -45,6 +53,10 @@ public class IndexModel : PageModel
 
     public async Task OnGet()
     {
+        // Validar número da página
+        if (PageNumber < 1)
+            PageNumber = 1;
+
         var query = _db.Pedidos
             .Include(p => p.Itens)
             .AsQueryable();
@@ -71,12 +83,12 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         // Expandir para um registro por item
-        PedidoItens = new List<PedidoItemExibicao>();
+        var todosOsItens = new List<PedidoItemExibicao>();
         foreach (var pedido in pedidos)
         {
             foreach (var item in pedido.Itens)
             {
-                PedidoItens.Add(new PedidoItemExibicao
+                todosOsItens.Add(new PedidoItemExibicao
                 {
                     PedidoId = pedido.Id,
                     PedidoItemId = item.Id,
@@ -92,6 +104,20 @@ public class IndexModel : PageModel
                 });
             }
         }
+
+        // Calcular paginação
+        TotalItems = todosOsItens.Count;
+        TotalPages = (int)Math.Ceiling((double)TotalItems / ItemsPerPage);
+
+        // Validar página
+        if (PageNumber > TotalPages && TotalPages > 0)
+            PageNumber = TotalPages;
+
+        // Aplicar paginação
+        PedidoItens = todosOsItens
+            .Skip((PageNumber - 1) * ItemsPerPage)
+            .Take(ItemsPerPage)
+            .ToList();
     }
 
     public async Task<IActionResult> OnPostAddPedido()
@@ -351,6 +377,77 @@ public class IndexModel : PageModel
             await _db.SaveChangesAsync();
 
             return new JsonResult(new { success = true, message = "Etiqueta impressa e marcada como impressa!" });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Erro: {ex.Message}" });
+        }
+    }
+
+    public async Task<IActionResult> OnPostImprimirTodas()
+    {
+        try
+        {
+            var itensPendentes = await _db.PedidoItens
+                .Include(i => i.Pedido)
+                .Where(i => !i.Impresso)
+                .ToListAsync();
+
+            if (!itensPendentes.Any())
+            {
+                return new JsonResult(new { success = false, error = "Nenhuma etiqueta pendente para imprimir." });
+            }
+
+            int impressos = 0;
+            var erros = new List<string>();
+
+            foreach (var item in itensPendentes)
+            {
+                try
+                {
+                    // Gerar ZPL
+                    var zpl = _etiquetaService.GerarZpl(item.Pedido, item);
+
+                    // Enviar para impressora
+                    string erro = null;
+                    if (_impressaoService != null && _impressaoService.Imprimir(zpl, out erro))
+                    {
+                        item.Impresso = true;
+                        impressos++;
+                    }
+                    else
+                    {
+                        var mensagemErro = string.IsNullOrEmpty(erro) ? "Erro desconhecido" : erro;
+                        erros.Add($"Item {item.Id}: {mensagemErro}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    erros.Add($"Item {item.Id}: {ex.Message}");
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            if (impressos > 0)
+            {
+                return new JsonResult(new 
+                { 
+                    success = true, 
+                    impresso = impressos,
+                    mensagem = erros.Any() 
+                        ? $"{impressos} impresso(s), mas houve {erros.Count} erro(s)." 
+                        : $"Todas as {impressos} etiqueta(s) foram impressas com sucesso!"
+                });
+            }
+            else
+            {
+                return new JsonResult(new 
+                { 
+                    success = false, 
+                    error = $"Falha ao imprimir: {string.Join(", ", erros)}" 
+                });
+            }
         }
         catch (Exception ex)
         {

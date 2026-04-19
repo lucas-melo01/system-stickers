@@ -3,9 +3,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4" style="margin-top: 3%">
     <h2 class="mb-0">📦 Pedidos</h2>
-    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPedidoModal" style="background-color: #001623; color: #FFF200; border: none; font-weight: bold;">
-        ➕ Adicionar Pedido
-    </button>
+    <div class="gap-2" style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-success" onclick="imprimirTodas()" style="background-color: #001623; color: #FFF200; border: none; font-weight: bold;">
+            🖨️ Imprimir Etiquetas Pendentes
+        </button>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPedidoModal" style="background-color: #001623; color: #FFF200; border: none; font-weight: bold;">
+            ➕ Adicionar Pedido
+        </button>
+    </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -93,6 +98,105 @@
         }
     </tbody>
 </table>
+
+<!-- Controles de Paginação -->
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <div>
+        <span class="text-muted">
+            Mostrando <strong>@((Model.PageNumber - 1) * 15 + 1)</strong> 
+            até <strong>@Math.Min(Model.PageNumber * 15, Model.TotalItems)</strong> 
+            de <strong>@Model.TotalItems</strong> itens
+        </span>
+    </div>
+
+    <nav aria-label="Paginação">
+        <ul class="pagination mb-0">
+            <!-- Botão Anterior -->
+            @if (Model.PageNumber > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=1&searchTerm=@Model.SearchTerm&dataPedido=@Model.DataPedido?.ToString("yyyy-MM-dd")" aria-label="Primeira Página">
+                        ⏮️ Primeira
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@(Model.PageNumber - 1)&searchTerm=@Model.SearchTerm&dataPedido=@Model.DataPedido?.ToString("yyyy-MM-dd")" aria-label="Página Anterior">
+                        ◀️ Anterior
+                    </a>
+                </li>
+            }
+            else
+            {
+                <li class="page-item disabled">
+                    <span class="page-link">⏮️ Primeira</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">◀️ Anterior</span>
+                </li>
+            }
+
+            <!-- Números de Página -->
+            @{
+                int startPage = Math.Max(1, Model.PageNumber - 2);
+                int endPage = Math.Min(Model.TotalPages, Model.PageNumber + 2);
+
+                if (startPage > 1)
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                }
+
+                for (int i = startPage; i <= endPage; i++)
+                {
+                    if (i == Model.PageNumber)
+                    {
+                        <li class="page-item active">
+                            <span class="page-link">@i</span>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="?pageNumber=@i&searchTerm=@Model.SearchTerm&dataPedido=@Model.DataPedido?.ToString("yyyy-MM-dd")">@i</a>
+                        </li>
+                    }
+                }
+
+                if (endPage < Model.TotalPages)
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                }
+            }
+
+            <!-- Botão Próximo -->
+            @if (Model.PageNumber < Model.TotalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@(Model.PageNumber + 1)&searchTerm=@Model.SearchTerm&dataPedido=@Model.DataPedido?.ToString("yyyy-MM-dd")" aria-label="Próxima Página">
+                        Próxima ▶️
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?pageNumber=@Model.TotalPages&searchTerm=@Model.SearchTerm&dataPedido=@Model.DataPedido?.ToString("yyyy-MM-dd")" aria-label="Última Página">
+                        Última ⏭️
+                    </a>
+                </li>
+            }
+            else
+            {
+                <li class="page-item disabled">
+                    <span class="page-link">Próxima ▶️</span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Última ⏭️</span>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
 
 <!-- Modal para Adicionar Pedido -->
 <div class="modal fade" id="addPedidoModal" tabindex="-1" aria-labelledby="addPedidoModalLabel" aria-hidden="true">
@@ -281,58 +385,22 @@
 
     async function previewEtiqueta(pedidoId, itemId) {
         try {
-            const response = await fetch(`/?handler=print&pedidoId=${pedidoId}&itemId=${itemId}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.success) {
-                currentPrintData = { pedidoId, itemId, ...data };
-                document.getElementById('zplCode').value = data.zpl;
-                document.getElementById('etiquetaInfo').innerHTML = `
-                    <strong>Pedido:</strong> ${data.pedidoExternoId}<br>
-                    <strong>Produto:</strong> ${data.produto}<br>
-                    <strong>Cliente:</strong> ${data.cliente}
-                `;
-
-                const modal = new bootstrap.Modal(document.getElementById('printPreviewModal'));
-                modal.show();
-            } else {
-                alert('Erro: ' + (data.error || 'Erro desconhecido'));
-            }
+            // Imprimir diretamente sem mostrar o ZPL
+            await confirmarImpressaoComId(pedidoId, itemId);
         } catch (error) {
             console.error('Erro:', error);
-            alert('Erro ao gerar etiqueta: ' + error.message);
+            alert('Erro ao imprimir: ' + error.message);
         }
     }
 
-    function copiarZpl() {
-        const zplCode = document.getElementById('zplCode');
-        zplCode.select();
-        document.execCommand('copy');
-
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = '✅ Copiado!';
-        setTimeout(() => {
-            btn.textContent = originalText;
-        }, 2000);
-    }
-
-    async function confirmarImpressao() {
-        if (!currentPrintData) return;
-
+    async function confirmarImpressaoComId(pedidoId, itemId) {
         try {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
             const formData = new FormData();
-            formData.append('pedidoId', currentPrintData.pedidoId);
-            formData.append('itemId', currentPrintData.itemId);
+            formData.append('pedidoId', pedidoId);
+            formData.append('itemId', itemId);
             formData.append('__RequestVerificationToken', token);
 
-            // Fazer POST para marcar como impresso
             const response = await fetch('/?handler=confirmprint', {
                 method: 'POST',
                 body: formData
@@ -341,19 +409,71 @@
             const data = await response.json();
 
             if (data.success) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('printPreviewModal'));
-                modal.hide();
-
-                // Recarregar a página para atualizar o status
+                alert('✅ Etiqueta impressa com sucesso!');
                 setTimeout(() => {
                     location.reload();
                 }, 500);
             } else {
-                alert('Erro ao confirmar impressão: ' + (data.error || 'Erro desconhecido'));
+                alert('❌ Erro ao imprimir: ' + (data.error || 'Erro desconhecido'));
             }
         } catch (error) {
             console.error('Erro:', error);
-            alert('Erro: ' + error.message);
+            alert('❌ Erro: ' + error.message);
+        }
+    }
+
+    async function imprimirTodas() {
+        if (!confirm('🖨️ Deseja imprimir TODAS as etiquetas pendentes?')) {
+            return;
+        }
+
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '⏳ Processando...';
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', token);
+
+            console.log('Enviando requisição para imprimir todas...');
+
+            const response = await fetch('/?handler=imprimirtodas', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('Status da resposta:', response.status);
+            console.log('Headers:', response.headers);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseText = await response.text();
+            console.log('Resposta bruta:', responseText);
+
+            const data = JSON.parse(responseText);
+
+            console.log('Dados recebidos:', data);
+
+            if (data.success) {
+                alert(`✅ Sucesso!\n\n${data.impresso} etiqueta(s) impressa(s).\n\n${data.mensagem || ''}`);
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            } else {
+                alert('❌ Erro ao imprimir:\n\n' + (data.error || 'Erro desconhecido'));
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        } catch (error) {
+            console.error('Erro completo:', error);
+            console.error('Stack:', error.stack);
+            alert('❌ Erro ao processar:\n\n' + error.message);
+            btn.disabled = false;
+            btn.textContent = originalText;
         }
     }
 
