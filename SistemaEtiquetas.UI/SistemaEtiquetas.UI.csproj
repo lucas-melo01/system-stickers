@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SistemaEtiquetas.API\SistemaEtiquetas.API.csproj" />
     <ProjectReference Include="..\SistemaEtiquetas.Domain\SistemaEtiquetas.Domain.csproj" />
     <ProjectReference Include="..\SistemaEtiquetas.Infrastructure\SistemaEtiquetas.Infrastructure.csproj" />
-    <ProjectReference Include="..\SistemaEtiquetas.API\SistemaEtiquetas.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,19 +15,11 @@ CultureInfo.DefaultThreadCurrentUICulture = ptBr;
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<EtiquetaService>();
 
-// Configure Postgres (Supabase) connection. 
-// 🔒 TESTE: Connection string hardcoded (REMOVER EM PRODUÇÃO!)
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? "Host=db.pvmdtjxixrpckfdbrhpz.supabase.co;Username=postgres;Password=Lucasmelo001;Database=postgres;Port=5432;SSL Mode=Require;Trust Server Certificate=true";
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        databaseUrl,
-        npgsqlOptions => npgsqlOptions
-            .CommandTimeout(30)
-            .EnableRetryOnFailure(maxRetryCount: 5)
-    )
-);
+    options.UseNpgsql(databaseUrl));
 
 var app = builder.Build();
 
