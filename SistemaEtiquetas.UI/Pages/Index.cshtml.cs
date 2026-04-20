@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using SistemaEtiquetas.API.Services;
+using SistemaEtiquetas.UI.Services;
 using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.ComponentModel.DataAnnotations;

@@ -4,10 +4,15 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SistemaEtiquetas.API\SistemaEtiquetas.API.csproj" />
     <ProjectReference Include="..\SistemaEtiquetas.Domain\SistemaEtiquetas.Domain.csproj" />
     <ProjectReference Include="..\SistemaEtiquetas.Infrastructure\SistemaEtiquetas.Infrastructure.csproj" />
   </ItemGroup>

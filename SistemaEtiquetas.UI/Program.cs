@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Infrastructure.Data;
 using SistemaEtiquetas.UI.Services;
 using System.Diagnostics;

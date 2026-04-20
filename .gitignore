@@ -124,3 +124,8 @@ Thumbs.db
 .tools/
 .vscode-test/
 /SistemaEtiquetas.API/SistemaEtiquetas.API.csproj
+
+*.PublishOutput/
+*.PublishSingleFile/
+/PublishSingleFile
+/PublishOutput
