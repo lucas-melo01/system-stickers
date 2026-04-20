@@ -150,6 +150,23 @@ app.MapGet("/config", async (AppDbContext db) =>
     return Results.Ok(config);
 });
 
+// Função auxiliar para fazer parsing do SKU no formato SKU-COR-TAMANHO
+static (string sku, string cor, string tamanho) ParsearSku(string skuCompleto)
+{
+    if (string.IsNullOrWhiteSpace(skuCompleto))
+        return (skuCompleto, null, null);
+
+    var partes = skuCompleto.Split('-');
+
+    if (partes.Length < 3)
+        return (skuCompleto, null, null);
+
+    var sku = partes[0];
+    var cor = partes[1];
+    var tamanho = string.Join("-", partes.Skip(2));
+
+    return (sku, cor, tamanho);
+}
 
 // Webhook Resume Modas
 app.MapPost("/webhook/pedido/resumemodas", async (AppDbContext db, HttpRequest request) =>
@@ -157,6 +174,11 @@ app.MapPost("/webhook/pedido/resumemodas", async (AppDbContext db, HttpRequest r
     var payload = await new StreamReader(request.Body).ReadToEndAsync();
     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     var pedidoDto = JsonSerializer.Deserialize<WebhookPedidoDto>(payload, options);
+
+    // Filtrar apenas pedidos com status "pedido_pago"
+    if (pedidoDto?.situacao?.codigo != "pedido_pago")
+        return Results.Ok("Pedido não processado: status diferente de 'pedido_pago'");
+
     var existe = await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString());
     if (existe) return Results.Ok("Pedido já processado");
     var dataPedido = pedidoDto.data_criacao;
@@ -180,10 +202,14 @@ app.MapPost("/webhook/pedido/resumemodas", async (AppDbContext db, HttpRequest r
     };
     foreach (var item in pedidoDto.itens)
     {
+        var (sku, cor, tamanho) = ParsearSku(item.sku);
+
         pedido.Itens.Add(new PedidoItem
         {
             Produto = item.nome,
-            SKU = item.sku,
+            SKU = sku,
+            Cor = cor,
+            Tamanho = tamanho,
             Quantidade = item.quantidade
         });
     }
@@ -198,6 +224,11 @@ app.MapPost("/webhook/pedido/donnakora", async (AppDbContext db, HttpRequest req
     var payload = await new StreamReader(request.Body).ReadToEndAsync();
     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     var pedidoDto = JsonSerializer.Deserialize<WebhookPedidoDto>(payload, options);
+
+    // Filtrar apenas pedidos com status "pedido_pago"
+    if (pedidoDto?.situacao?.codigo != "pedido_pago")
+        return Results.Ok("Pedido não processado: status diferente de 'pedido_pago'");
+
     var existe = await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString());
     if (existe) return Results.Ok("Pedido já processado");
     var dataPedido = pedidoDto.data_criacao;
@@ -221,10 +252,14 @@ app.MapPost("/webhook/pedido/donnakora", async (AppDbContext db, HttpRequest req
     };
     foreach (var item in pedidoDto.itens)
     {
+        var (sku, cor, tamanho) = ParsearSku(item.sku);
+
         pedido.Itens.Add(new PedidoItem
         {
             Produto = item.nome,
-            SKU = item.sku,
+            SKU = sku,
+            Cor = cor,
+            Tamanho = tamanho,
             Quantidade = item.quantidade
         });
     }

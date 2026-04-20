@@ -14,6 +14,7 @@ namespace SistemaEtiquetas.API.DTO
         public List<EnvioDto> envios { get; set; }
         public List<PagamentoDto> pagamentos { get; set; }
         public decimal valor_envio { get; set; }
+        public SituacaoDto situacao { get; set; }
     }
 
     public class ClienteDto
@@ -48,5 +49,10 @@ namespace SistemaEtiquetas.API.DTO
     public class FormaPagamentoDto
     {
         public string nome { get; set; }
+    }
+
+    public class SituacaoDto
+    {
+        public string codigo { get; set; }
     }
 }
