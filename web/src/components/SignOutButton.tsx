@@ -2,21 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Button from "@mui/material/Button";
 
 export function SignOutButton() {
   const router = useRouter();
   return (
-    <button
+    <Button
       type="button"
+      variant="outlined"
+      size="small"
+      color="primary"
       onClick={async () => {
         const supabase = createClient();
         await supabase.auth.signOut();
         router.replace("/login");
         router.refresh();
       }}
-      className="text-zinc-500 hover:text-zinc-300 text-sm"
     >
       Sair
-    </button>
+    </Button>
   );
 }

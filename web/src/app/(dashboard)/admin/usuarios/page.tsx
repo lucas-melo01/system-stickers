@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { apiGet } from "@/lib/api";
 import { UsuariosClient } from "./usuarios-client";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +35,18 @@ export default async function AdminUsuariosPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[#FFF200] mb-2">Usuários</h1>
-      <p className="text-zinc-500 text-sm mb-4">
-        Perfis vêm do banco da aplicação (sincronizados com Supabase). O primeiro acesso cria o registro em{" "}
-        <code className="text-zinc-400">/api/auth/sync</code>.
-      </p>
+    <Box>
+      <Typography variant="h5" color="primary" gutterBottom sx={{ fontWeight: 700 }}>
+        Usuários
+      </Typography>
+      <Typography variant="body2" color="text.secondary" component="p" sx={{ mb: 2 }}>
+        Perfis vêm do banco da aplicação (sincronizados com Supabase). O primeiro acesso cria o registo em{" "}
+        <Box component="code" sx={{ bgcolor: "grey.100", px: 0.5, borderRadius: 0.5 }}>
+          /api/auth/sync
+        </Box>
+        .
+      </Typography>
       <UsuariosClient initial={list} />
-    </div>
+    </Box>
   );
 }

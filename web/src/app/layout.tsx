@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeRegistry } from "@/components/ThemeRegistry";
+import { BRAND_NAME, APP_SHORT_TITLE } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema Etiquetas",
-  description: "Pedidos, etiquetas e relatórios",
+  title: `${BRAND_NAME} · ${APP_SHORT_TITLE}`,
+  description: "Pedidos, etiquetas e relatórios — Resume + DonnaKora",
 };
 
 export default function RootLayout({
@@ -24,10 +26,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeRegistry>{children}</ThemeRegistry>
       </body>
     </html>
   );

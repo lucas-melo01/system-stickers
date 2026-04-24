@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { AppNav } from "@/components/AppNav";
-import { SignOutButton } from "@/components/SignOutButton";
+import { DashboardFrame } from "@/components/DashboardFrame";
 import { apiGet } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -28,12 +27,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="max-w-6xl mx-auto px-4 py-1 flex justify-end">
-        <SignOutButton />
-      </div>
-      <AppNav isAdmin={isAdmin} email={session.user.email ?? undefined} />
-      <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>
-    </div>
+    <DashboardFrame isAdmin={isAdmin} email={session.user.email ?? undefined}>
+      {children}
+    </DashboardFrame>
   );
 }

@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import Paper from "@mui/material/Paper";
+import Alert from "@mui/material/Alert";
+import { BRAND_NAME, APP_SHORT_TITLE } from "@/lib/brand";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,7 +27,9 @@ export default function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!configOk) {
-      setErr("Aplicação sem variáveis Supabase no Vercel. Adicione NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY e faça redeploy.");
+      setErr(
+        "Aplicação sem variáveis Supabase no Vercel. Adicione NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY e faça redeploy."
+      );
       return;
     }
     setErr(null);
@@ -50,45 +60,78 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#001623] p-4">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm border border-zinc-700 bg-zinc-900/50 p-8 rounded-xl shadow-lg"
-      >
-        <h1 className="text-2xl font-bold text-[#FFF200] mb-6">Sistema Etiquetas</h1>
-        <p className="text-zinc-400 text-sm mb-6">Acesse com a conta do Supabase Auth.</p>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 2,
+        bgcolor: "primary.main",
+      }}
+    >
+      <Paper elevation={4} sx={{ p: 4, maxWidth: 400, width: 1, borderRadius: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+          <StorefrontIcon color="primary" fontSize="large" />
+          <Box>
+            <Typography variant="h5" color="primary" sx={{ fontWeight: 800 }}>
+              {BRAND_NAME}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {APP_SHORT_TITLE}
+            </Typography>
+          </Box>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Acesse com a conta do Supabase Auth.
+        </Typography>
         {!configOk && (
-          <p className="text-amber-400 text-sm mb-4 border border-amber-800 rounded p-3">
-            O deploy não tem <code className="text-amber-200">NEXT_PUBLIC_SUPABASE_URL</code> nem{" "}
-            <code className="text-amber-200">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> no Vercel, ou faltou um novo
-            build depois de as definir.
-          </p>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            O deploy não tem <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> (ou
+            faltou rebuild).
+          </Alert>
         )}
-        {err && <p className="text-red-400 text-sm mb-4">{err}</p>}
-        <label className="block text-zinc-300 text-sm mb-1">E-mail</label>
-        <input
-          className="w-full mb-4 px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
-        <label className="block text-zinc-300 text-sm mb-1">Senha</label>
-        <input
-          className="w-full mb-6 px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-        />
-        <button
-          type="submit"
-          disabled={loading || !configOk}
-          className="w-full py-2.5 font-semibold rounded bg-[#FFF200] text-[#001623] hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? "Entrando…" : "Entrar"}
-        </button>
-      </form>
-    </div>
+        <form onSubmit={onSubmit}>
+          {err && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {err}
+            </Alert>
+          )}
+          <TextField
+            fullWidth
+            label="E-mail"
+            name="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            margin="normal"
+            size="small"
+          />
+          <TextField
+            fullWidth
+            label="Senha"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            margin="normal"
+            size="small"
+          />
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            color="secondary"
+            disabled={loading || !configOk}
+            sx={{ mt: 2, fontWeight: 800 }}
+            size="large"
+          >
+            {loading ? "Entrando…" : "Entrar"}
+          </Button>
+        </form>
+      </Paper>
+    </Box>
   );
 }

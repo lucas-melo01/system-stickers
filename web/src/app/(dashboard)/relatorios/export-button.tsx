@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Button from "@mui/material/Button";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 export function ExportExcelButton({ inicio, fim }: { inicio: string; fim: string }) {
   const [loading, setLoading] = useState(false);
@@ -12,7 +15,9 @@ export function ExportExcelButton({ inicio, fim }: { inicio: string; fim: string
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Sessão expirou");
       const u = new URLSearchParams({ inicio, fim });
       const r = await fetch(`/api/relatorios/vendas/export?${u}`, {
@@ -33,16 +38,23 @@ export function ExportExcelButton({ inicio, fim }: { inicio: string; fim: string
   }
 
   return (
-    <div className="mb-4">
-      <button
+    <Box>
+      <Button
         type="button"
         disabled={loading}
         onClick={download}
-        className="px-3 py-1.5 text-sm text-[#001623] bg-[#FFF200] font-semibold rounded disabled:opacity-50"
+        variant="contained"
+        color="secondary"
+        size="small"
+        sx={{ fontWeight: 700 }}
       >
         {loading ? "Gerando…" : "Baixar Excel"}
-      </button>
-      {err && <p className="text-red-400 text-sm mt-1">{err}</p>}
-    </div>
+      </Button>
+      {err && (
+        <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+          {err}
+        </Typography>
+      )}
+    </Box>
   );
 }
