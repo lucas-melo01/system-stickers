@@ -68,6 +68,12 @@ app.MapPost("/webhook/pedido/donnakora", async (HttpContext http, AppDbContext d
 
 app.MapGet("/", () => "API Sistema Etiquetas");
 
+app.MapGet("/diag/cors", () => Results.Ok(new
+{
+    origins = SistemaEtiquetas.API.Extensions.ServiceCollectionExtensions.CorsOrigens,
+    corsOriginsEnv = Environment.GetEnvironmentVariable("CORS_ORIGINS"),
+}));
+
 app.MapGet("/health", (AppDbContext db) =>
 {
     try

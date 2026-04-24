@@ -36,30 +36,78 @@ public static class ServiceCollectionExtensions
         services.AddAuthorization();
     }
 
+    /// <summary>
+    /// Lista estática das origens carregadas, para diagnóstico em /diag/cors.
+    /// </summary>
+    public static IReadOnlyList<string> CorsOrigens { get; private set; } = Array.Empty<string>();
+
     public static void AddSistemaEtiquetasCors(this IServiceCollection services, IConfiguration config)
     {
-        // CORS_ORIGINS tem prioridade: em produção o appsettings traz ainda "localhost" e,
-        // como Cors:Origins nunca fica vazio, a variável CORS_ORIGINS (Render) era ignorada
-        // e o browser não recebia Access-Control-Allow-Origin para o domínio do Vercel.
+        // CORS_ORIGINS (env) tem prioridade sobre Cors:Origins (appsettings).
+        // Em produção o appsettings inclui localhost; sem a env, o browser não recebia
+        // Access-Control-Allow-Origin para o domínio do Vercel.
         var raw = Environment.GetEnvironmentVariable("CORS_ORIGINS");
         if (string.IsNullOrWhiteSpace(raw))
             raw = config["Cors:Origins"];
         if (string.IsNullOrWhiteSpace(raw))
             raw = "http://localhost:3000,http://127.0.0.1:3000";
 
-        var origins = raw
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        var entradas = raw
+            .Split(new[] { ',', ';', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(o => o.TrimEnd('/'))
             .Where(o => o.Length > 0)
-            .Distinct()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+        var exatas = entradas.Where(o => !o.Contains('*')).ToArray();
+        var padroes = entradas.Where(o => o.Contains('*')).ToArray();
+
+        CorsOrigens = entradas;
+        Console.WriteLine($"🌐 CORS habilitado para: {string.Join(", ", entradas)}");
 
         services.AddCors(o =>
         {
-            o.AddPolicy("Web", p => p
-                .WithOrigins(origins)
-                .AllowAnyHeader()
-                .AllowAnyMethod());
+            o.AddPolicy("Web", p =>
+            {
+                if (exatas.Length > 0)
+                    p.WithOrigins(exatas);
+
+                if (padroes.Length > 0)
+                {
+                    p.SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin)) return false;
+                        var normalizado = origin.TrimEnd('/');
+                        foreach (var padrao in padroes)
+                        {
+                            if (OrigemCombinaPadrao(normalizado, padrao)) return true;
+                        }
+                        return false;
+                    });
+                }
+
+                p.AllowAnyHeader()
+                 .AllowAnyMethod();
+            });
         });
+    }
+
+    private static bool OrigemCombinaPadrao(string origin, string padrao)
+    {
+        // Suporta apenas curinga no subdomínio, tipo "https://*.vercel.app".
+        // Isso evita depender de Regex genérico e acidentalmente autorizar domínios inesperados.
+        var idxProtocol = padrao.IndexOf("://", StringComparison.Ordinal);
+        if (idxProtocol < 0) return false;
+        var idxStar = padrao.IndexOf('*', idxProtocol);
+        if (idxStar < 0)
+            return string.Equals(origin, padrao, StringComparison.OrdinalIgnoreCase);
+
+        var prefixo = padrao[..idxStar];
+        var sufixo = padrao[(idxStar + 1)..];
+        if (!origin.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase)) return false;
+        if (!origin.EndsWith(sufixo, StringComparison.OrdinalIgnoreCase)) return false;
+        var meio = origin.Substring(prefixo.Length, origin.Length - prefixo.Length - sufixo.Length);
+        if (meio.Length == 0) return false;
+        return !meio.Contains('/') && !meio.Contains(':');
     }
 }
