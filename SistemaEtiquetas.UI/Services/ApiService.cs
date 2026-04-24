@@ -21,7 +21,7 @@ namespace SistemaEtiquetas.UI.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync("/config");
+                var response = await _httpClient.GetAsync("/api/config");
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -52,7 +52,7 @@ namespace SistemaEtiquetas.UI.Services
             {
                 var json = JsonSerializer.Serialize(config);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("/config", content);
+                var response = await _httpClient.PostAsync("/api/config", content);
                 
                 if (response.IsSuccessStatusCode)
                 {

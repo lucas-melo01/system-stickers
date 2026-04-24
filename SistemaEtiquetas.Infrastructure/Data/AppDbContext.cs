@@ -11,6 +11,8 @@ namespace SistemaEtiquetas.Infrastructure.Data
 
         public DbSet<Configuracao> Configuracoes { get; set; }
 
+        public DbSet<UsuarioSistema> Usuarios { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
@@ -36,6 +38,12 @@ namespace SistemaEtiquetas.Infrastructure.Data
             {
                 b.HasKey(i => i.Id);
                 b.Property(i => i.Id).ValueGeneratedOnAdd();
+            });
+
+            modelBuilder.Entity<UsuarioSistema>(b =>
+            {
+                b.HasKey(u => u.Id);
+                b.Property(u => u.Email).IsRequired();
             });
 
             base.OnModelCreating(modelBuilder);
