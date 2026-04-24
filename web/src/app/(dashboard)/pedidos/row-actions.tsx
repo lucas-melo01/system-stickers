@@ -1,75 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { printItemLabelsBatched } from "@/lib/etiqueta-print";
 import Button from "@mui/material/Button";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
-const BAUD_STORAGE = "zpl-serial-baud";
-const BAUDS = [9600, 19200, 38400, 57600, 115200] as const;
+const PRINT_WINDOW_FEATURES = "width=520,height=420,resizable=yes,scrollbars=yes,noopener=no";
 
-export function PedidoRowActions({
-  itemId,
-  accessToken: tokenProp,
-  quantidade,
-}: {
-  itemId: number;
-  accessToken: string;
-  quantidade: number;
-}) {
+export function PedidoRowActions({ itemId }: { itemId: number }) {
   const router = useRouter();
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [baud, setBaud] = useState(9600);
+  // Detecta o fecho da janela de impressão para poder recarregar a tabela,
+  // mostrando o item como "impresso" sem o utilizador precisar de refresh manual.
+  const popupRef = useRef<Window | null>(null);
+  const watchTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const s = window.localStorage.getItem(BAUD_STORAGE);
-    const n = s ? parseInt(s, 10) : 9600;
-    if ((BAUDS as readonly number[]).includes(n)) setBaud(n);
+    return () => {
+      if (watchTimer.current) window.clearInterval(watchTimer.current);
+    };
   }, []);
 
-  function persistBaud(n: number) {
-    setBaud(n);
-    try {
-      window.localStorage.setItem(BAUD_STORAGE, String(n));
-    } catch {
-      /* ignore */
-    }
-  }
-
-  async function getToken() {
-    const supabase = createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? tokenProp;
-  }
-
-  async function imprimir() {
+  function imprimir() {
     setMsg(null);
     setLoading(true);
-    const copies = Math.max(1, Math.min(quantidade || 1, 50));
-    try {
-      const t = await getToken();
-      if (!t) {
-        setMsg("Sessão expirou. Entre de novo.");
-        return;
-      }
-      await printItemLabelsBatched(itemId, t, baud, copies);
-      setMsg("Impresso e actualizado");
-      router.refresh();
-    } catch (e) {
-      setMsg(String(e));
-    } finally {
+    const w = window.open(`/print/etiqueta/${itemId}`, `print-etiqueta-${itemId}`, PRINT_WINDOW_FEATURES);
+    if (!w) {
       setLoading(false);
+      setMsg("O browser bloqueou o pop-up. Autorize pop-ups para este site.");
+      return;
     }
+    popupRef.current = w;
+    if (watchTimer.current) window.clearInterval(watchTimer.current);
+    watchTimer.current = window.setInterval(() => {
+      if (!popupRef.current || popupRef.current.closed) {
+        if (watchTimer.current) window.clearInterval(watchTimer.current);
+        watchTimer.current = null;
+        popupRef.current = null;
+        setLoading(false);
+        router.refresh();
+      }
+    }, 600);
   }
 
   return (
@@ -83,21 +56,6 @@ export function PedidoRowActions({
         justifyContent: "flex-end",
       }}
     >
-      <FormControl size="small" sx={{ minWidth: 88 }}>
-        <InputLabel id={`baud-${itemId}`}>Baud</InputLabel>
-        <Select
-          labelId={`baud-${itemId}`}
-          value={baud}
-          label="Baud"
-          onChange={(e) => persistBaud(Number(e.target.value))}
-        >
-          {BAUDS.map((b) => (
-            <MenuItem key={b} value={b}>
-              {b}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
       <Button
         type="button"
         disabled={loading}
@@ -105,9 +63,9 @@ export function PedidoRowActions({
         variant="contained"
         size="small"
         color="primary"
-        sx={{ minWidth: 90, fontWeight: 700, whiteSpace: "nowrap" }}
+        sx={{ minWidth: 110, fontWeight: 700, whiteSpace: "nowrap" }}
       >
-        {loading ? "…" : "Imprimir"}
+        {loading ? "A imprimir…" : "Imprimir"}
       </Button>
       {msg && (
         <Typography variant="caption" color="text.secondary" sx={{ width: "100%", textAlign: "right" }}>

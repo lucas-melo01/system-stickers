@@ -212,6 +212,15 @@ public static class ApiV1Routes
             });
         });
 
+        // Novo formato para impressão via HTML/spooler (não-ZPL). Devolve os campos já
+        // normalizados para a página /print/etiqueta do front renderizar directamente.
+        g.MapGet("/pedido-itens/{itemId:int}/etiqueta.json", async (int itemId, AppDbContext db) =>
+        {
+            var item = await db.PedidoItens.AsNoTracking().Include(i => i.Pedido).FirstOrDefaultAsync(i => i.Id == itemId);
+            if (item == null) return Results.NotFound();
+            return Results.Json(MapearEtiqueta(item));
+        });
+
         g.MapPost("/pedido-itens/{itemId:int}/marcar-impresso", async (int itemId, AppDbContext db) =>
         {
             var item = await db.PedidoItens.FirstOrDefaultAsync(i => i.Id == itemId);
@@ -233,6 +242,18 @@ public static class ApiV1Routes
                 })
                 .ToListAsync();
             return Results.Ok(list);
+        });
+
+        // Todos os itens por imprimir, já no formato que a página de impressão consome.
+        // Usado pelo botão "Imprimir todas as pendentes" para abrir um único diálogo com N páginas.
+        g.MapGet("/pedido-itens/pendentes-impressao/etiquetas.json", async (AppDbContext db) =>
+        {
+            var itens = await db.PedidoItens.AsNoTracking()
+                .Include(i => i.Pedido)
+                .Where(i => !i.Impresso)
+                .OrderBy(i => i.Id)
+                .ToListAsync();
+            return Results.Json(itens.Select(MapearEtiqueta));
         });
 
         g.MapGet("/relatorios/vendas", async (AppDbContext db, DateTime? inicio, DateTime? fim) =>
@@ -374,5 +395,18 @@ public static class ApiV1Routes
         Perfil = u.Perfil.ToString(),
         u.Ativo,
         u.CriadoEm
+    };
+
+    private static object MapearEtiqueta(PedidoItem it) => new
+    {
+        itemId = it.Id,
+        pedidoId = it.PedidoId,
+        nomeCliente = it.Pedido?.NomeCliente ?? "",
+        cpfCliente = it.Pedido?.ClienteCpf ?? "",
+        data = (it.Pedido?.DataPedido ?? DateTime.UtcNow).ToString("dd/MM/yyyy"),
+        modelo = it.Produto ?? "",
+        cor = it.Cor ?? "",
+        tamanho = it.Tamanho ?? "",
+        codFornecedor = it.SKU ?? ""
     };
 }

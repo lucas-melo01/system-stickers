@@ -43,13 +43,11 @@ export function PedidosView({
   q,
   data,
   page,
-  accessToken,
 }: {
   result: Paged;
   q?: string;
   data?: string;
   page: number;
-  accessToken: string;
 }) {
   const qs = (p: number) => {
     const sp = new URLSearchParams();
@@ -148,7 +146,7 @@ export function PedidosView({
                   )}
                 </TableCell>
                 <TableCell align="right">
-                  <PedidoRowActions itemId={r.pedidoItemId} accessToken={accessToken} quantidade={r.quantidade} />
+                  <PedidoRowActions itemId={r.pedidoItemId} />
                 </TableCell>
               </TableRow>
             ))}

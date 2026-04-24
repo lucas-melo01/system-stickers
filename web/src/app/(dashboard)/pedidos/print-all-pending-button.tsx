@@ -1,98 +1,57 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { printItemLabelsBatched } from "@/lib/etiqueta-print";
+import { useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { useRouter } from "next/navigation";
 
-const BAUD_STORAGE = "zpl-serial-baud";
-const BAUDS = [9600, 19200, 38400, 57600, 115200] as const;
-
-type Pendente = { itemId: number; quantidade: number };
+const PRINT_WINDOW_FEATURES = "width=560,height=520,resizable=yes,scrollbars=yes,noopener=no";
 
 export function PrintAllPendingButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [baud, setBaud] = useState(9600);
+  const popupRef = useRef<Window | null>(null);
+  const watchTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const s = window.localStorage.getItem(BAUD_STORAGE);
-    const n = s ? parseInt(s, 10) : 9600;
-    if ((BAUDS as readonly number[]).includes(n)) setBaud(n);
+    return () => {
+      if (watchTimer.current) window.clearInterval(watchTimer.current);
+    };
   }, []);
 
-  function persistBaud(n: number) {
-    setBaud(n);
-    try {
-      window.localStorage.setItem(BAUD_STORAGE, String(n));
-    } catch {
-      /* ignore */
-    }
-  }
-
-  async function run() {
-    if (!window.confirm("Imprimir todas as etiquetas pendentes, na ordem da base? A impressora USB deve estar pronta.")) {
+  function run() {
+    if (
+      !window.confirm(
+        "Imprimir todas as etiquetas pendentes? Um único diálogo de impressão será aberto com todas elas."
+      )
+    ) {
       return;
     }
     setMsg(null);
     setLoading(true);
-    try {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const t = session?.access_token;
-      if (!t) {
-        setMsg("Sessão expirou.");
-        return;
-      }
-      const r = await fetch("/api/pedido-itens/pendentes-impressao", {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (!r.ok) throw new Error(await r.text());
-      const list = (await r.json()) as Pendente[];
-      if (list.length === 0) {
-        setMsg("Não há itens pendentes.");
-        return;
-      }
-      for (const row of list) {
-        const q = row.quantidade > 0 ? row.quantidade : 1;
-        await printItemLabelsBatched(row.itemId, t, baud, q);
-      }
-      setMsg(`Concluído: ${list.length} item(ns) processado(s).`);
-      router.refresh();
-    } catch (e) {
-      setMsg(String(e));
-    } finally {
+    const w = window.open("/print/etiquetas/pendentes", "print-pendentes", PRINT_WINDOW_FEATURES);
+    if (!w) {
       setLoading(false);
+      setMsg("O browser bloqueou o pop-up. Autorize pop-ups para este site.");
+      return;
     }
+    popupRef.current = w;
+    if (watchTimer.current) window.clearInterval(watchTimer.current);
+    watchTimer.current = window.setInterval(() => {
+      if (!popupRef.current || popupRef.current.closed) {
+        if (watchTimer.current) window.clearInterval(watchTimer.current);
+        watchTimer.current = null;
+        popupRef.current = null;
+        setLoading(false);
+        router.refresh();
+      }
+    }, 600);
   }
 
   return (
     <Box sx={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
-      <FormControl size="small" sx={{ minWidth: 100 }}>
-        <InputLabel id="baud-lote">Baud</InputLabel>
-        <Select
-          labelId="baud-lote"
-          label="Baud"
-          value={baud}
-          onChange={(e) => persistBaud(Number(e.target.value))}
-        >
-          {BAUDS.map((b) => (
-            <MenuItem key={b} value={b}>
-              {b}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
       <Button
         type="button"
         variant="contained"
@@ -101,7 +60,7 @@ export function PrintAllPendingButton() {
         onClick={run}
         sx={{ fontWeight: 700 }}
       >
-        {loading ? "A processar…" : "Imprimir todas as pendentes"}
+        {loading ? "A imprimir…" : "Imprimir todas as pendentes"}
       </Button>
       {msg && (
         <Typography variant="body2" color="text.secondary" sx={{ width: "100%" }}>

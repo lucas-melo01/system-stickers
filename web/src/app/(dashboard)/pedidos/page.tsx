@@ -75,7 +75,6 @@ export default async function PedidosPage({
       q={q}
       data={data}
       page={page}
-      accessToken={session.access_token}
     />
   );
 }
