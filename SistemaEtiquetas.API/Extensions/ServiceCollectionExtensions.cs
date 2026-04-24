@@ -38,10 +38,21 @@ public static class ServiceCollectionExtensions
 
     public static void AddSistemaEtiquetasCors(this IServiceCollection services, IConfiguration config)
     {
-        var raw = config["Cors:Origins"]
-            ?? Environment.GetEnvironmentVariable("CORS_ORIGINS")
-            ?? "http://localhost:3000,http://127.0.0.1:3000";
-        var origins = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // CORS_ORIGINS tem prioridade: em produção o appsettings traz ainda "localhost" e,
+        // como Cors:Origins nunca fica vazio, a variável CORS_ORIGINS (Render) era ignorada
+        // e o browser não recebia Access-Control-Allow-Origin para o domínio do Vercel.
+        var raw = Environment.GetEnvironmentVariable("CORS_ORIGINS");
+        if (string.IsNullOrWhiteSpace(raw))
+            raw = config["Cors:Origins"];
+        if (string.IsNullOrWhiteSpace(raw))
+            raw = "http://localhost:3000,http://127.0.0.1:3000";
+
+        var origins = raw
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(o => o.TrimEnd('/'))
+            .Where(o => o.Length > 0)
+            .Distinct()
+            .ToArray();
 
         services.AddCors(o =>
         {
