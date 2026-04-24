@@ -20,9 +20,22 @@ import { SignOutButton } from "@/components/SignOutButton";
 
 const DRAWER_W = 260;
 
-function NavItem({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) {
+function NavItem({
+  href,
+  label,
+  icon,
+  activePathPrefix,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  /** Se definido, o item fica activo em qualquer sub-rota (ex.: /pedidos, /admin) */
+  activePathPrefix?: string;
+}) {
   const pathname = usePathname();
-  const active = pathname === href;
+  const active = activePathPrefix
+    ? pathname === activePathPrefix || pathname?.startsWith(`${activePathPrefix}/`)
+    : pathname === href;
   return (
     <ListItemButton
       component={Link}
@@ -104,9 +117,16 @@ export function DashboardFrame({
           </Typography>
         </Toolbar>
         <MuiList disablePadding>
-          <NavItem href="/pedidos" label="Pedidos" icon={<LocalShippingIcon fontSize="small" />} />
-          <NavItem href="/relatorios" label="Relatórios" icon={<AssessmentIcon fontSize="small" />} />
-          {isAdmin && <NavItem href="/admin/usuarios" label="Usuários" icon={<GroupIcon fontSize="small" />} />}
+          <NavItem href="/pedidos" label="Pedidos" icon={<LocalShippingIcon fontSize="small" />} activePathPrefix="/pedidos" />
+          <NavItem href="/relatorios" label="Relatórios" icon={<AssessmentIcon fontSize="small" />} activePathPrefix="/relatorios" />
+          {isAdmin && (
+            <NavItem
+              href="/admin/gestao-utilizadores"
+              label="Utilizadores"
+              icon={<GroupIcon fontSize="small" />}
+              activePathPrefix="/admin"
+            />
+          )}
         </MuiList>
       </Drawer>
 

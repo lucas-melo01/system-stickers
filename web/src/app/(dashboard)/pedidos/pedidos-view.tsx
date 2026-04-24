@@ -13,6 +13,8 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { PedidoRowActions } from "./row-actions";
+import { PrintAllPendingButton } from "./print-all-pending-button";
+import { PaginationBar } from "@/components/PaginationBar";
 
 type Row = {
   pedidoId: number;
@@ -59,9 +61,26 @@ export function PedidosView({
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, color: "primary.main" }}>
-        Pedidos
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "flex-start", sm: "center" },
+          justifyContent: "space-between",
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Typography variant="h5" sx={{ color: "primary.main" }}>
+          Pedidos
+        </Typography>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
+          <Button component={Link} href="/pedidos/novo" variant="contained" color="secondary" size="small" sx={{ fontWeight: 800 }}>
+            + Adicionar pedido
+          </Button>
+          <PrintAllPendingButton />
+        </Box>
+      </Box>
       <Paper
         variant="outlined"
         component="form"
@@ -136,23 +155,13 @@ export function PedidosView({
           </TableBody>
         </Table>
       </TableContainer>
-      {result.totalPages > 1 && (
-        <Box sx={{ display: "flex", flexDirection: "row", gap: 2, alignItems: "center", mt: 2, flexWrap: "wrap" }}>
-          {page > 1 && (
-            <Button component={Link} href={`/pedidos?${qs(page - 1)}`} size="small" variant="outlined">
-              Anterior
-            </Button>
-          )}
-          <Typography variant="body2" color="text.secondary">
-            {page} / {result.totalPages} ({result.totalCount} itens)
-          </Typography>
-          {page < result.totalPages && (
-            <Button component={Link} href={`/pedidos?${qs(page + 1)}`} size="small" variant="outlined">
-              Próxima
-            </Button>
-          )}
-        </Box>
-      )}
+      <PaginationBar
+        page={page}
+        totalPages={result.totalPages}
+        totalCount={result.totalCount}
+        pageSize={result.pageSize}
+        buildHref={(p) => `/pedidos?${qs(p)}`}
+      />
     </Box>
   );
 }

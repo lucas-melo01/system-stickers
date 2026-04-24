@@ -218,6 +218,20 @@ public static class ApiV1Routes
             return Results.Ok(new { item.Id, item.Impresso });
         });
 
+        g.MapGet("/pedido-itens/pendentes-impressao", async (AppDbContext db) =>
+        {
+            var list = await db.PedidoItens.AsNoTracking()
+                .Where(i => !i.Impresso)
+                .OrderBy(i => i.Id)
+                .Select(i => new PendenteImpressaoDto
+                {
+                    ItemId = i.Id,
+                    Quantidade = i.Quantidade > 0 ? i.Quantidade : 1
+                })
+                .ToListAsync();
+            return Results.Ok(list);
+        });
+
         g.MapGet("/relatorios/vendas", async (AppDbContext db, DateTime? inicio, DateTime? fim) =>
         {
             if (inicio == null || fim == null)
@@ -310,6 +324,36 @@ public static class ApiV1Routes
 
                 await db.SaveChangesAsync();
                 return Results.Ok(MapearUsuario(u));
+            });
+
+            admin.MapPost("/usuarios/provision", async (ProvisionUsuarioRequest body, AppDbContext db) =>
+            {
+                if (string.IsNullOrWhiteSpace(body.Email))
+                    return Results.BadRequest("E-mail é obrigatório.");
+                if (!Enum.TryParse<UsuarioPerfil>(body.Perfil, true, out var perfil))
+                    return Results.BadRequest("Perfil inválido (use Operador ou Admin).");
+
+                var existing = await db.Usuarios.FindAsync(new object[] { body.Id }, default);
+                if (existing != null)
+                {
+                    existing.Email = body.Email.Trim();
+                    existing.Perfil = perfil;
+                    if (!existing.Ativo) existing.Ativo = true;
+                }
+                else
+                {
+                    db.Usuarios.Add(new UsuarioSistema
+                    {
+                        Id = body.Id,
+                        Email = body.Email.Trim(),
+                        Perfil = perfil,
+                        Ativo = true,
+                        CriadoEm = DateTime.UtcNow
+                    });
+                }
+                await db.SaveChangesAsync();
+                var saved = await db.Usuarios.AsNoTracking().FirstAsync(u => u.Id == body.Id);
+                return Results.Ok(MapearUsuario(saved));
             });
         }
     }

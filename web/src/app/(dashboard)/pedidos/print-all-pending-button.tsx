@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { printItemLabelsBatched } from "@/lib/etiqueta-print";
 import Button from "@mui/material/Button";
@@ -9,24 +8,19 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
-import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import { useRouter } from "next/navigation";
 
 const BAUD_STORAGE = "zpl-serial-baud";
 const BAUDS = [9600, 19200, 38400, 57600, 115200] as const;
 
-export function PedidoRowActions({
-  itemId,
-  accessToken: tokenProp,
-  quantidade,
-}: {
-  itemId: number;
-  accessToken: string;
-  quantidade: number;
-}) {
+type Pendente = { itemId: number; quantidade: number };
+
+export function PrintAllPendingButton() {
   const router = useRouter();
-  const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
   const [baud, setBaud] = useState(9600);
 
   useEffect(() => {
@@ -44,26 +38,36 @@ export function PedidoRowActions({
     }
   }
 
-  async function getToken() {
-    const supabase = createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? tokenProp;
-  }
-
-  async function imprimir() {
+  async function run() {
+    if (!window.confirm("Imprimir todas as etiquetas pendentes, na ordem da base? A impressora USB deve estar pronta.")) {
+      return;
+    }
     setMsg(null);
     setLoading(true);
-    const copies = Math.max(1, Math.min(quantidade || 1, 50));
     try {
-      const t = await getToken();
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const t = session?.access_token;
       if (!t) {
-        setMsg("Sessão expirou. Entre de novo.");
+        setMsg("Sessão expirou.");
         return;
       }
-      await printItemLabelsBatched(itemId, t, baud, copies);
-      setMsg("Impresso e actualizado");
+      const r = await fetch("/api/pedido-itens/pendentes-impressao", {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const list = (await r.json()) as Pendente[];
+      if (list.length === 0) {
+        setMsg("Não há itens pendentes.");
+        return;
+      }
+      for (const row of list) {
+        const q = row.quantidade > 0 ? row.quantidade : 1;
+        await printItemLabelsBatched(row.itemId, t, baud, q);
+      }
+      setMsg(`Concluído: ${list.length} item(ns) processado(s).`);
       router.refresh();
     } catch (e) {
       setMsg(String(e));
@@ -73,22 +77,13 @@ export function PedidoRowActions({
   }
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 0.5,
-        alignItems: "center",
-        justifyContent: "flex-end",
-      }}
-    >
-      <FormControl size="small" sx={{ minWidth: 88 }}>
-        <InputLabel id={`baud-${itemId}`}>Baud</InputLabel>
+    <Box sx={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+      <FormControl size="small" sx={{ minWidth: 100 }}>
+        <InputLabel id="baud-lote">Baud</InputLabel>
         <Select
-          labelId={`baud-${itemId}`}
-          value={baud}
+          labelId="baud-lote"
           label="Baud"
+          value={baud}
           onChange={(e) => persistBaud(Number(e.target.value))}
         >
           {BAUDS.map((b) => (
@@ -100,17 +95,16 @@ export function PedidoRowActions({
       </FormControl>
       <Button
         type="button"
-        disabled={loading}
-        onClick={imprimir}
         variant="contained"
-        size="small"
         color="primary"
-        sx={{ minWidth: 90, fontWeight: 700, whiteSpace: "nowrap" }}
+        disabled={loading}
+        onClick={run}
+        sx={{ fontWeight: 700 }}
       >
-        {loading ? "…" : "Imprimir"}
+        {loading ? "A processar…" : "Imprimir todas as pendentes"}
       </Button>
       {msg && (
-        <Typography variant="caption" color="text.secondary" sx={{ width: "100%", textAlign: "right" }}>
+        <Typography variant="body2" color="text.secondary" sx={{ width: "100%" }}>
           {msg}
         </Typography>
       )}

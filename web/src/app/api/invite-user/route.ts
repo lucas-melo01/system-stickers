@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { getBackendApiBase } from "@/lib/server-api-base";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -11,17 +12,39 @@ export async function POST(request: Request) {
     );
   }
   const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  }
+  const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const allowed = (process.env.ADMIN_INVITE_EMAILS ?? "")
+  const allowedEmails = (process.env.ADMIN_INVITE_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  if (allowed.length === 0 || !allowed.includes(user.email.toLowerCase())) {
+
+  let isAppAdmin = false;
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (apiBase) {
+    try {
+      const r = await fetch(`${apiBase.replace(/\/$/, "")}/api/auth/sync`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (r.ok) {
+        const j = (await r.json()) as { perfil?: string };
+        isAppAdmin = j.perfil === "Admin";
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!isAppAdmin && (allowedEmails.length === 0 || !allowedEmails.includes(user.email.toLowerCase()))) {
     return NextResponse.json({ error: "Sem permissão para convidar" }, { status: 403 });
   }
 
@@ -31,7 +54,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Service role ou URL não configurados no servidor" }, { status: 500 });
   }
 
-  const { email, password } = (await request.json()) as { email?: string; password?: string };
+  const body = (await request.json()) as {
+    email?: string;
+    password?: string;
+    perfil?: string;
+  };
+  const { email, password, perfil = "Operador" } = body;
   if (!email || !password) {
     return NextResponse.json({ error: "email e password obrigatórios" }, { status: 400 });
   }
@@ -40,12 +68,36 @@ export async function POST(request: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data, error } = await admin.auth.admin.createUser({
-    email,
+    email: email.trim(),
     password,
     email_confirm: true,
   });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
-  return NextResponse.json({ id: data.user.id, email: data.user.email });
+  const newId = data.user!.id;
+  const newEmail = data.user!.email ?? email.trim();
+  const perfilStr = perfil === "Admin" ? "Admin" : "Operador";
+
+  let provisioned = false;
+  try {
+    const base = getBackendApiBase();
+    const prov = await fetch(`${base}/api/admin/usuarios/provision`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: newId,
+        email: newEmail,
+        perfil: perfilStr,
+      }),
+    });
+    provisioned = prov.ok;
+  } catch {
+    /* NEXT_PUBLIC_API_URL em falta ou API indisponível – perfil fica para o 1.º /api/auth/sync */
+  }
+
+  return NextResponse.json({ id: newId, email: newEmail, perfil: perfilStr, provisioned });
 }

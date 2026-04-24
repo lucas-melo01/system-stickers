@@ -71,3 +71,16 @@ public class AtualizarUsuarioRequest
     public string? Perfil { get; set; }
     public bool? Ativo { get; set; }
 }
+
+public class ProvisionUsuarioRequest
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Perfil { get; set; } = "Operador";
+}
+
+public class PendenteImpressaoDto
+{
+    public int ItemId { get; set; }
+    public int Quantidade { get; set; }
+}
