@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardFrame } from "@/components/DashboardFrame";
 import { apiGet } from "@/lib/api";
+import { isAdminPerfil } from "@/lib/is-admin-perfil";
 
 export const dynamic = "force-dynamic";
 
-type Sync = { id: string; email: string; perfil: string; ativo?: boolean };
+type Sync = { id: string; email: string; perfil: string | number; ativo?: boolean };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -20,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (api) {
     try {
       const me = await apiGet<Sync>("/api/auth/sync", session.access_token);
-      isAdmin = me.perfil === "Admin";
+      isAdmin = isAdminPerfil(me.perfil);
     } catch {
       isAdmin = false;
     }

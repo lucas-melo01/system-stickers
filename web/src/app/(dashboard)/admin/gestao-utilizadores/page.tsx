@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { apiGet } from "@/lib/api";
+import { isAdminPerfil } from "@/lib/is-admin-perfil";
 import { GestaoUtilizadoresClient } from "./gestao-client";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
 export const dynamic = "force-dynamic";
 
-type Sync = { perfil: string };
-type U = { id: string; email: string; nome: string | null; perfil: string; ativo: boolean; criadoEm: string };
+type Sync = { perfil: string | number };
+type U = { id: string; email: string; nome: string | null; perfil: string | number; ativo: boolean; criadoEm: string };
 
 export default async function GestaoUtilizadoresPage() {
   const supabase = await createClient();
@@ -24,7 +25,7 @@ export default async function GestaoUtilizadoresPage() {
   } catch {
     redirect("/pedidos");
   }
-  if (me.perfil !== "Admin") redirect("/pedidos");
+  if (!isAdminPerfil(me.perfil)) redirect("/pedidos");
 
   let list: U[] = [];
   try {

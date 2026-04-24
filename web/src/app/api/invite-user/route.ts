@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { getBackendApiBase } from "@/lib/server-api-base";
+import { isAdminPerfil } from "@/lib/is-admin-perfil";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -37,8 +38,8 @@ export async function POST(request: Request) {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (r.ok) {
-        const j = (await r.json()) as { perfil?: string };
-        isAppAdmin = j.perfil === "Admin";
+        const j = (await r.json()) as { perfil?: string | number };
+        isAppAdmin = isAdminPerfil(j.perfil);
       }
     } catch {
       /* ignore */
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     email?: string;
     password?: string;
-    perfil?: string;
+    perfil?: string | number;
   };
   const { email, password, perfil = "Operador" } = body;
   if (!email || !password) {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
   }
   const newId = data.user!.id;
   const newEmail = data.user!.email ?? email.trim();
-  const perfilStr = perfil === "Admin" ? "Admin" : "Operador";
+  const perfilStr = isAdminPerfil(perfil) ? "Admin" : "Operador";
 
   let provisioned = false;
   try {

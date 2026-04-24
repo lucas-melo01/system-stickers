@@ -17,8 +17,9 @@ import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import Alert from "@mui/material/Alert";
 import { BRAND_NAME } from "@/lib/brand";
+import { isAdminPerfil } from "@/lib/is-admin-perfil";
 
-type U = { id: string; email: string; nome: string | null; perfil: string; ativo: boolean; criadoEm: string };
+type U = { id: string; email: string; nome: string | null; perfil: string | number; ativo: boolean; criadoEm: string };
 
 export function GestaoUtilizadoresClient({ initial }: { initial: U[] }) {
   const [list, setList] = useState(initial);
@@ -134,11 +135,13 @@ export function GestaoUtilizadoresClient({ initial }: { initial: U[] }) {
             {list.map((r) => (
               <TableRow key={r.id} hover>
                 <TableCell>{r.email}</TableCell>
-                <TableCell>{r.perfil}</TableCell>
+                <TableCell>
+                  {isAdminPerfil(r.perfil) ? "Admin" : "Operador"}
+                </TableCell>
                 <TableCell>{r.ativo ? "Activo" : "Inactivo"}</TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {r.perfil === "Operador" ? (
+                    {!isAdminPerfil(r.perfil) ? (
                       <Button type="button" size="small" variant="outlined" onClick={() => patch(r.id, { perfil: "Admin" })}>
                         Tornar admin
                       </Button>
