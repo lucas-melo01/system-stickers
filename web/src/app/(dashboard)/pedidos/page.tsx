@@ -38,6 +38,7 @@ export default async function PedidosPage({
   const data = typeof sp.data === "string" ? sp.data : undefined;
   const page = typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
   const supabase = await createClient();
+  if (!supabase) redirect("/login");
   const {
     data: { session },
   } = await supabase.auth.getSession();

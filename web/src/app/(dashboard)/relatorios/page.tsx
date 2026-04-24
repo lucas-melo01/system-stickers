@@ -28,6 +28,7 @@ export default async function RelatoriosPage({
   const fim = typeof sp.fim === "string" ? sp.fim : undefined;
 
   const supabase = await createClient();
+  if (!supabase) redirect("/login");
   const {
     data: { session },
   } = await supabase.auth.getSession();

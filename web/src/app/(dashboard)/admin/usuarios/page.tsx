@@ -10,6 +10,7 @@ type U = { id: string; email: string; nome: string | null; perfil: string; ativo
 
 export default async function AdminUsuariosPage() {
   const supabase = await createClient();
+  if (!supabase) redirect("/login");
   const {
     data: { session },
   } = await supabase.auth.getSession();

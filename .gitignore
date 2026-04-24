@@ -34,6 +34,7 @@ appsettings*.Local.json
 appsettings.Local.json
 .env
 .env.local
+**/*.local.sql
 
 # Logs, temp and diagnostics
 *.log

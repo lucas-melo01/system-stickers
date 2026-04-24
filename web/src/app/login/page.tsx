@@ -10,9 +10,18 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const configOk =
+    typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
+    typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!configOk) {
+      setErr("Aplicação sem variáveis Supabase no Vercel. Adicione NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY e faça redeploy.");
+      return;
+    }
     setErr(null);
     setLoading(true);
     const supabase = createClient();
@@ -48,6 +57,13 @@ export default function LoginPage() {
       >
         <h1 className="text-2xl font-bold text-[#FFF200] mb-6">Sistema Etiquetas</h1>
         <p className="text-zinc-400 text-sm mb-6">Acesse com a conta do Supabase Auth.</p>
+        {!configOk && (
+          <p className="text-amber-400 text-sm mb-4 border border-amber-800 rounded p-3">
+            O deploy não tem <code className="text-amber-200">NEXT_PUBLIC_SUPABASE_URL</code> nem{" "}
+            <code className="text-amber-200">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> no Vercel, ou faltou um novo
+            build depois de as definir.
+          </p>
+        )}
         {err && <p className="text-red-400 text-sm mb-4">{err}</p>}
         <label className="block text-zinc-300 text-sm mb-1">E-mail</label>
         <input
@@ -67,7 +83,7 @@ export default function LoginPage() {
         />
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !configOk}
           className="w-full py-2.5 font-semibold rounded bg-[#FFF200] text-[#001623] hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Entrando…" : "Entrar"}

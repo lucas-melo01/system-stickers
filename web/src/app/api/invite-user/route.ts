@@ -4,6 +4,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { error: "Supabase não configurado (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY no Vercel)" },
+      { status: 503 }
+    );
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();

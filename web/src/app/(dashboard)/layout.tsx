@@ -10,6 +10,7 @@ type Sync = { id: string; email: string; perfil: string; ativo?: boolean };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
+  if (!supabase) redirect("/login");
   const {
     data: { session },
   } = await supabase.auth.getSession();
