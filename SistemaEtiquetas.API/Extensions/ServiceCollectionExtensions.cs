@@ -6,16 +6,44 @@ namespace SistemaEtiquetas.API.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    /// <summary>Estado carregado no arranque, para /diag/auth apresentar informação útil sem expor o segredo.</summary>
+    public sealed class AuthDiagSnapshot
+    {
+        public bool Configurado { get; set; }
+        public string? SupabaseUrl { get; set; }
+        public int SecretTamanho { get; set; }
+        public string? SecretUltimos4 { get; set; }
+        public string? IssuerEsperado { get; set; }
+        public string AudienceEsperada { get; set; } = "authenticated";
+        public string Algoritmo { get; set; } = "HS256";
+    }
+
+    public static AuthDiagSnapshot AuthDiag { get; } = new();
+
     public static void AddSistemaEtiquetasAuth(this IServiceCollection services, IConfiguration config)
     {
-        var secret = config["Auth:SupabaseJwtSecret"] ?? Environment.GetEnvironmentVariable("SUPABASE_JWT_SECRET");
-        var baseUrl = (config["Auth:SupabaseUrl"] ?? Environment.GetEnvironmentVariable("SUPABASE_URL") ?? "").TrimEnd('/');
+        var secretRaw = config["Auth:SupabaseJwtSecret"] ?? Environment.GetEnvironmentVariable("SUPABASE_JWT_SECRET");
+        var urlRaw = config["Auth:SupabaseUrl"] ?? Environment.GetEnvironmentVariable("SUPABASE_URL");
+
+        // Trim defensivo: valores copiados do painel Render podem trazer espaço/aspas/quebra de linha.
+        var secret = (secretRaw ?? "").Trim().Trim('"', '\'');
+        var baseUrl = (urlRaw ?? "").Trim().Trim('"', '\'').TrimEnd('/');
 
         if (string.IsNullOrEmpty(secret) || string.IsNullOrEmpty(baseUrl))
         {
             Console.WriteLine("⚠️ Auth: defina Auth:SupabaseUrl e Auth:SupabaseJwtSecret (ou SUPABASE_URL / SUPABASE_JWT_SECRET). API /api/* ficará pública sem JWT.");
+            AuthDiag.Configurado = false;
+            AuthDiag.SupabaseUrl = baseUrl;
             return;
         }
+
+        AuthDiag.Configurado = true;
+        AuthDiag.SupabaseUrl = baseUrl;
+        AuthDiag.SecretTamanho = secret.Length;
+        AuthDiag.SecretUltimos4 = secret.Length >= 4 ? secret[^4..] : "****";
+        AuthDiag.IssuerEsperado = $"{baseUrl}/auth/v1";
+
+        Console.WriteLine($"🔐 Auth HS256 carregada. issuer={AuthDiag.IssuerEsperado} secretLen={AuthDiag.SecretTamanho}");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(o =>
@@ -24,12 +52,35 @@ public static class ServiceCollectionExtensions
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+                    ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
                     ValidIssuer = $"{baseUrl}/auth/v1",
                     ValidAudience = "authenticated",
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(2)
+                };
+
+                // Logs detalhados ao falhar a autenticação; aparecem nos logs do Render e
+                // permitem distinguir "alg errado" de "assinatura inválida" / "expirado".
+                o.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = ctx =>
+                    {
+                        var logger = ctx.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtBearer");
+                        logger.LogWarning(ctx.Exception,
+                            "JWT inválido: {Mensagem}", ctx.Exception.Message);
+                        ctx.Response.Headers["x-auth-error"] = ctx.Exception.GetType().Name;
+                        return Task.CompletedTask;
+                    },
+                    OnChallenge = ctx =>
+                    {
+                        if (!string.IsNullOrEmpty(ctx.ErrorDescription))
+                            ctx.Response.Headers["x-auth-error-description"] = ctx.ErrorDescription;
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
