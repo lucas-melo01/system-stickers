@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { getBackendApiBase } from "@/lib/server-api-base";
 import { isAdminPerfil } from "@/lib/is-admin-perfil";
+import { fetchPerfilAtual } from "@/lib/auth-sync";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -30,21 +31,8 @@ export async function POST(request: Request) {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  let isAppAdmin = false;
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
-  if (apiBase) {
-    try {
-      const r = await fetch(`${apiBase.replace(/\/$/, "")}/api/auth/sync`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (r.ok) {
-        const j = (await r.json()) as { perfil?: string | number };
-        isAppAdmin = isAdminPerfil(j.perfil);
-      }
-    } catch {
-      /* ignore */
-    }
-  }
+  const me = await fetchPerfilAtual(session.access_token);
+  const isAppAdmin = isAdminPerfil(me?.perfil);
   if (!isAppAdmin && (allowedEmails.length === 0 || !allowedEmails.includes(user.email.toLowerCase()))) {
     return NextResponse.json({ error: "Sem permissão para convidar" }, { status: 403 });
   }

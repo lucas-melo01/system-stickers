@@ -1,12 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardFrame } from "@/components/DashboardFrame";
-import { apiGet } from "@/lib/api";
 import { isAdminPerfil } from "@/lib/is-admin-perfil";
+import { fetchPerfilAtual } from "@/lib/auth-sync";
 
 export const dynamic = "force-dynamic";
-
-type Sync = { id: string; email: string; perfil: string | number; ativo?: boolean };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -16,16 +14,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   } = await supabase.auth.getSession();
   if (!session?.access_token) redirect("/login");
 
-  let isAdmin = false;
-  const api = process.env.NEXT_PUBLIC_API_URL;
-  if (api) {
-    try {
-      const me = await apiGet<Sync>("/api/auth/sync", session.access_token);
-      isAdmin = isAdminPerfil(me.perfil);
-    } catch {
-      isAdmin = false;
-    }
-  }
+  const me = await fetchPerfilAtual(session.access_token);
+  const isAdmin = isAdminPerfil(me?.perfil);
 
   return (
     <DashboardFrame isAdmin={isAdmin} email={session.user.email ?? undefined}>

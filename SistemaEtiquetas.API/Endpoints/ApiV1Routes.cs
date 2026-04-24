@@ -47,7 +47,7 @@ public static class ApiV1Routes
             return Results.Ok(config);
         });
 
-        g.MapPost("/auth/sync", async (HttpContext ctx, AppDbContext db, IConfiguration cfg) =>
+        async Task<IResult> AuthSyncHandler(HttpContext ctx, AppDbContext db, IConfiguration cfg)
         {
             if (!auth)
                 return Results.Json(new { message = "Autenticação não configurada na API" }, statusCode: 501);
@@ -62,7 +62,10 @@ public static class ApiV1Routes
                 Perfil = u.Perfil.ToString(),
                 u.Ativo
             });
-        });
+        }
+
+        g.MapPost("/auth/sync", AuthSyncHandler);
+        g.MapGet("/auth/sync", AuthSyncHandler);
 
         g.MapGet("/pedidos", async (AppDbContext db, string? q, DateTime? data, int page = 1, int pageSize = 15) =>
         {

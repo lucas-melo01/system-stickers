@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { apiGet } from "@/lib/api";
+import { fetchPerfilAtual } from "@/lib/auth-sync";
 import { isAdminPerfil } from "@/lib/is-admin-perfil";
 import { GestaoUtilizadoresClient } from "./gestao-client";
 import Box from "@mui/material/Box";
@@ -8,7 +9,6 @@ import Typography from "@mui/material/Typography";
 
 export const dynamic = "force-dynamic";
 
-type Sync = { perfil: string | number };
 type U = { id: string; email: string; nome: string | null; perfil: string | number; ativo: boolean; criadoEm: string };
 
 export default async function GestaoUtilizadoresPage() {
@@ -19,13 +19,8 @@ export default async function GestaoUtilizadoresPage() {
   } = await supabase.auth.getSession();
   if (!session?.access_token) redirect("/login");
   if (!process.env.NEXT_PUBLIC_API_URL) redirect("/pedidos");
-  let me: Sync;
-  try {
-    me = await apiGet<Sync>("/api/auth/sync", session.access_token);
-  } catch {
-    redirect("/pedidos");
-  }
-  if (!isAdminPerfil(me.perfil)) redirect("/pedidos");
+  const me = await fetchPerfilAtual(session.access_token);
+  if (!me || !isAdminPerfil(me.perfil)) redirect("/pedidos");
 
   let list: U[] = [];
   try {
