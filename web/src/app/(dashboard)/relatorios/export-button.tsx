@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { apiUrl } from "@/lib/api";
 
 export function ExportExcelButton({ inicio, fim }: { inicio: string; fim: string }) {
   const [loading, setLoading] = useState(false);
@@ -16,7 +15,7 @@ export function ExportExcelButton({ inicio, fim }: { inicio: string; fim: string
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Sessão expirou");
       const u = new URLSearchParams({ inicio, fim });
-      const r = await fetch(apiUrl(`/api/relatorios/vendas/export.xlsx?${u}`), {
+      const r = await fetch(`/api/relatorios/vendas/export?${u}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!r.ok) throw new Error(await r.text());

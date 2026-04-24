@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { apiGet, apiUrl } from "@/lib/api";
+import { apiGet } from "@/lib/api";
 import { PedidoRowActions } from "./row-actions";
 
 export const dynamic = "force-dynamic";
@@ -128,8 +128,8 @@ export default async function PedidosPage({
                 <td className="p-2">
                   <PedidoRowActions
                     itemId={r.pedidoItemId}
-                    printUrl={apiUrl(`/api/pedido-itens/${r.pedidoItemId}/zpl.json`)}
                     accessToken={session.access_token}
+                    quantidade={r.quantidade}
                   />
                 </td>
               </tr>
