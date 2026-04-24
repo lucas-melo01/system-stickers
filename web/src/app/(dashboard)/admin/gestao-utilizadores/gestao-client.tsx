@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { apiPatch } from "@/lib/api";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -38,7 +37,17 @@ export function GestaoUtilizadoresClient({ initial }: { initial: U[] }) {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Sessão");
-      const u = await apiPatch<U>(`/api/admin/usuarios/${id}`, session.access_token, body);
+      const r = await fetch(`/api/admin/usuarios/${id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const text = await r.text();
+      if (!r.ok) throw new Error(text || r.statusText);
+      const u = JSON.parse(text) as U;
       setList((prev) => prev.map((x) => (x.id === id ? { ...x, ...u } : x)));
       setMsg("Guardado");
     } catch (e) {

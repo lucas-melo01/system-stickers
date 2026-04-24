@@ -42,18 +42,9 @@ export default function LoginPage() {
       return;
     }
     if (data.session) {
-      const token = data.session.access_token;
-      const api = process.env.NEXT_PUBLIC_API_URL;
-      if (api) {
-        try {
-          await fetch(`${api}/api/auth/sync`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch {
-          // API pode não ter JWT ainda; login Supabase ainda funciona
-        }
-      }
+      // O provisionamento do perfil na API do Render acontece do lado do servidor
+      // (no layout do dashboard, via fetchPerfilAtual). Não fazemos fetch direto a
+      // partir do browser para evitar CORS cross-origin com o Render.
       router.replace("/pedidos");
       router.refresh();
     }
