@@ -1,6 +1,7 @@
-/* Estilos de impressão da etiqueta 60 × 40 mm.
-   Chromium e Edge aceitam @page com margens 0; a impressora térmica trata
-   cada página como uma etiqueta separada na bobina. */
+/* Estilos de impressão da etiqueta 60 × 40 mm (landscape).
+   Em @page, especificar "largura altura" com largura > altura já define landscape
+   implicitamente na spec CSS. Reforço dentro de @media print para evitar que o
+   driver ou o próprio browser façam qualquer rotação/escala inesperada. */
 
 @page {
   size: 60mm 40mm;
@@ -37,7 +38,7 @@ body {
   row-gap: 1.5mm;
   color: #000;
   background: #fff;
-  /* Na impressão, cada etiqueta ocupa uma página. */
+  /* Na impressão, cada etiqueta ocupa uma página da bobina. */
   page-break-after: always;
   break-after: page;
 }
@@ -103,8 +104,8 @@ body {
   font-size: 10pt;
 }
 
-/* Preview em ecrã — apenas para o utilizador ver o layout antes de imprimir.
-   Tudo isto é ignorado quando o browser entra em modo de impressão. */
+/* Preview em ecrã — útil para o utilizador ver o layout antes de imprimir.
+   Desaparece automaticamente em @media print. */
 .screen-only {
   font-size: 12px;
   color: #666;
@@ -113,10 +114,28 @@ body {
 }
 
 @media print {
-  .print-root {
+  /* Redundante mas inequívoco — alguns drivers antigos ignoram o @page
+     de topo se não voltar a aparecer dentro do @media print. */
+  @page {
+    size: 60mm 40mm;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 60mm;
+    height: 40mm;
+    margin: 0;
     padding: 0;
-    gap: 0;
+    overflow: hidden;
     background: #fff;
+  }
+
+  .print-root {
+    padding: 0 !important;
+    gap: 0 !important;
+    background: #fff !important;
+    width: 60mm;
   }
 
   .screen-only {
@@ -124,8 +143,14 @@ body {
   }
 
   .etiqueta {
+    width: 60mm !important;
+    height: 40mm !important;
     border: none !important;
     box-shadow: none !important;
+    /* Garante que o texto sai sempre na horizontal, ignorando eventuais
+       defeitos do driver que tentem rotacionar o conteúdo. */
+    writing-mode: horizontal-tb;
+    transform: none !important;
   }
 }
 
