@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { apiGet } from "@/lib/api";
-import { fetchPerfilAtual } from "@/lib/auth-sync";
-import { isAdminPerfil } from "@/lib/is-admin-perfil";
 import { GestaoUtilizadoresClient } from "./gestao-client";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +17,22 @@ export default async function GestaoUtilizadoresPage() {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) redirect("/login");
-  if (!process.env.NEXT_PUBLIC_API_URL) redirect("/pedidos");
-  const me = await fetchPerfilAtual(session.access_token);
-  if (!me || !isAdminPerfil(me.perfil)) redirect("/pedidos");
 
   let list: U[] = [];
-  try {
-    list = await apiGet<U[]>("/api/admin/usuarios", session.access_token);
-  } catch {
-    list = [];
+  let erro: string | null = null;
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    erro = "API não configurada (NEXT_PUBLIC_API_URL em falta).";
+  } else {
+    try {
+      list = await apiGet<U[]>("/api/admin/usuarios", session.access_token);
+    } catch (e) {
+      const msg = String(e);
+      if (msg.includes("403") || msg.toLowerCase().includes("administrad")) {
+        erro = "Esta área só é visível para administradores. As suas permissões são insuficientes para listar ou alterar utilizadores.";
+      } else {
+        erro = `Falha a carregar a lista: ${msg}`;
+      }
+    }
   }
 
   return (
@@ -35,9 +41,14 @@ export default async function GestaoUtilizadoresPage() {
         Gestão de utilizadores
       </Typography>
       <Typography variant="body2" color="text.secondary" component="p" sx={{ mb: 2 }}>
-        Apenas administradores. Crie contas (Supabase Auth), defina se são administrador ou operador, e ative ou
-        inative o acesso à aplicação.
+        Listagem dos utilizadores do sistema. A criação de contas e as alterações de perfil/estado continuam restritas a
+        administradores do lado da API (podem devolver &ldquo;sem permissão&rdquo;).
       </Typography>
+      {erro && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {erro}
+        </Alert>
+      )}
       <GestaoUtilizadoresClient initial={list} />
     </Box>
   );

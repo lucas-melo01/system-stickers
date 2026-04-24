@@ -67,11 +67,9 @@ function NavItem({
 }
 
 export function DashboardFrame({
-  isAdmin,
   email,
   children,
 }: {
-  isAdmin: boolean;
   email?: string;
   children: React.ReactNode;
 }) {
@@ -119,14 +117,12 @@ export function DashboardFrame({
         <MuiList disablePadding>
           <NavItem href="/pedidos" label="Pedidos" icon={<LocalShippingIcon fontSize="small" />} activePathPrefix="/pedidos" />
           <NavItem href="/relatorios" label="Relatórios" icon={<AssessmentIcon fontSize="small" />} activePathPrefix="/relatorios" />
-          {isAdmin && (
-            <NavItem
-              href="/admin/gestao-utilizadores"
-              label="Utilizadores"
-              icon={<GroupIcon fontSize="small" />}
-              activePathPrefix="/admin"
-            />
-          )}
+          <NavItem
+            href="/admin/gestao-utilizadores"
+            label="Utilizadores"
+            icon={<GroupIcon fontSize="small" />}
+            activePathPrefix="/admin"
+          />
         </MuiList>
       </Drawer>
 

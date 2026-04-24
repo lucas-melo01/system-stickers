@@ -42,9 +42,6 @@ export default function LoginPage() {
       return;
     }
     if (data.session) {
-      // O provisionamento do perfil na API do Render acontece do lado do servidor
-      // (no layout do dashboard, via fetchPerfilAtual). Não fazemos fetch direto a
-      // partir do browser para evitar CORS cross-origin com o Render.
       router.replace("/pedidos");
       router.refresh();
     }
