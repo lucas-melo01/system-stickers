@@ -1,5 +1,15 @@
 const base = process.env.NEXT_PUBLIC_API_URL ?? "";
 
+export class ApiError extends Error {
+  status: number;
+  body: string;
+  constructor(status: number, body: string) {
+    super(`${status}${body ? `: ${body}` : ""}`);
+    this.status = status;
+    this.body = body;
+  }
+}
+
 export async function apiGet<T>(path: string, accessToken: string): Promise<T> {
   const r = await fetch(`${base}${path}`, {
     headers: {
@@ -10,7 +20,7 @@ export async function apiGet<T>(path: string, accessToken: string): Promise<T> {
   });
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(t || r.statusText);
+    throw new ApiError(r.status, t || r.statusText);
   }
   return r.json() as Promise<T>;
 }

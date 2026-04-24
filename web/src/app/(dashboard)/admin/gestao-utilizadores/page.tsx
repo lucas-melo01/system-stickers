@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { apiGet } from "@/lib/api";
+import { apiGet, ApiError } from "@/lib/api";
 import { GestaoUtilizadoresClient } from "./gestao-client";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -26,11 +26,25 @@ export default async function GestaoUtilizadoresPage() {
     try {
       list = await apiGet<U[]>("/api/admin/usuarios", session.access_token);
     } catch (e) {
-      const msg = String(e);
-      if (msg.includes("403") || msg.toLowerCase().includes("administrad")) {
-        erro = "Esta área só é visível para administradores. As suas permissões são insuficientes para listar ou alterar utilizadores.";
+      if (e instanceof ApiError) {
+        switch (e.status) {
+          case 401:
+            erro = "Sessão expirada. Faça login novamente.";
+            break;
+          case 403:
+            erro = "Esta área só é visível para administradores. As suas permissões são insuficientes para listar ou alterar utilizadores.";
+            break;
+          case 404:
+            erro = "A API no Render ainda não tem as rotas de administração. Faça o redeploy da API para obter a versão mais recente.";
+            break;
+          case 501:
+            erro = "A API no Render está sem autenticação configurada. Defina SUPABASE_URL e SUPABASE_JWT_SECRET no Render e faça redeploy.";
+            break;
+          default:
+            erro = `Falha a carregar a lista (HTTP ${e.status}): ${e.body || "sem detalhe"}`;
+        }
       } else {
-        erro = `Falha a carregar a lista: ${msg}`;
+        erro = `Falha a carregar a lista: ${String(e)}`;
       }
     }
   }

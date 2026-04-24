@@ -294,71 +294,76 @@ public static class ApiV1Routes
             return Results.File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name);
         });
 
-        if (auth)
+        // Rotas administrativas ficam sempre registadas para que o cliente receba
+        // 501 / 401 / 403 explícitos em vez de um 404 silencioso quando a
+        // autenticação não está configurada no Render.
+        var admin = g.MapGroup("/admin");
+        admin.AddEndpointFilter(async (context, next) =>
         {
-            var admin = g.MapGroup("/admin");
-            admin.AddEndpointFilter(async (context, next) =>
+            if (!auth)
+                return Results.Json(
+                    new { error = "Autenticação não configurada na API (defina SUPABASE_URL e SUPABASE_JWT_SECRET)." },
+                    statusCode: 501);
+
+            var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var id = AuthUsuarioHelper.GetUserId(context.HttpContext.User);
+            if (id == null)
+                return Results.Unauthorized();
+            if (!await AuthUsuarioHelper.IsAdminAsync(db, id.Value, context.HttpContext.RequestAborted))
+                return Results.Json(new { error = "Apenas administradores" }, statusCode: 403);
+            return await next(context);
+        });
+
+        admin.MapGet("/usuarios", async (AppDbContext db) =>
+        {
+            var list = await db.Usuarios.AsNoTracking()
+                .OrderByDescending(u => u.CriadoEm)
+                .ToListAsync();
+            return Results.Ok(list.Select(MapearUsuario));
+        });
+
+        admin.MapPatch("/usuarios/{id:guid}", async (Guid id, AtualizarUsuarioRequest body, AppDbContext db) =>
+        {
+            var u = await db.Usuarios.FindAsync(new object[] { id }, default);
+            if (u == null) return Results.NotFound();
+
+            if (body.Ativo.HasValue) u.Ativo = body.Ativo.Value;
+            if (!string.IsNullOrEmpty(body.Perfil) && Enum.TryParse<UsuarioPerfil>(body.Perfil, true, out var perfil))
+                u.Perfil = perfil;
+
+            await db.SaveChangesAsync();
+            return Results.Ok(MapearUsuario(u));
+        });
+
+        admin.MapPost("/usuarios/provision", async (ProvisionUsuarioRequest body, AppDbContext db) =>
+        {
+            if (string.IsNullOrWhiteSpace(body.Email))
+                return Results.BadRequest("E-mail é obrigatório.");
+            if (!Enum.TryParse<UsuarioPerfil>(body.Perfil, true, out var perfil))
+                return Results.BadRequest("Perfil inválido (use Operador ou Admin).");
+
+            var existing = await db.Usuarios.FindAsync(new object[] { body.Id }, default);
+            if (existing != null)
             {
-                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
-                var id = AuthUsuarioHelper.GetUserId(context.HttpContext.User);
-                if (id == null)
-                    return Results.Unauthorized();
-                if (!await AuthUsuarioHelper.IsAdminAsync(db, id.Value, context.HttpContext.RequestAborted))
-                    return Results.Json(new { error = "Apenas administradores" }, statusCode: 403);
-                return await next(context);
-            });
-
-            admin.MapGet("/usuarios", async (AppDbContext db) =>
+                existing.Email = body.Email.Trim();
+                existing.Perfil = perfil;
+                if (!existing.Ativo) existing.Ativo = true;
+            }
+            else
             {
-                var list = await db.Usuarios.AsNoTracking()
-                    .OrderByDescending(u => u.CriadoEm)
-                    .ToListAsync();
-                return Results.Ok(list.Select(MapearUsuario));
-            });
-
-            admin.MapPatch("/usuarios/{id:guid}", async (Guid id, AtualizarUsuarioRequest body, AppDbContext db) =>
-            {
-                var u = await db.Usuarios.FindAsync(new object[] { id }, default);
-                if (u == null) return Results.NotFound();
-
-                if (body.Ativo.HasValue) u.Ativo = body.Ativo.Value;
-                if (!string.IsNullOrEmpty(body.Perfil) && Enum.TryParse<UsuarioPerfil>(body.Perfil, true, out var perfil))
-                    u.Perfil = perfil;
-
-                await db.SaveChangesAsync();
-                return Results.Ok(MapearUsuario(u));
-            });
-
-            admin.MapPost("/usuarios/provision", async (ProvisionUsuarioRequest body, AppDbContext db) =>
-            {
-                if (string.IsNullOrWhiteSpace(body.Email))
-                    return Results.BadRequest("E-mail é obrigatório.");
-                if (!Enum.TryParse<UsuarioPerfil>(body.Perfil, true, out var perfil))
-                    return Results.BadRequest("Perfil inválido (use Operador ou Admin).");
-
-                var existing = await db.Usuarios.FindAsync(new object[] { body.Id }, default);
-                if (existing != null)
+                db.Usuarios.Add(new UsuarioSistema
                 {
-                    existing.Email = body.Email.Trim();
-                    existing.Perfil = perfil;
-                    if (!existing.Ativo) existing.Ativo = true;
-                }
-                else
-                {
-                    db.Usuarios.Add(new UsuarioSistema
-                    {
-                        Id = body.Id,
-                        Email = body.Email.Trim(),
-                        Perfil = perfil,
-                        Ativo = true,
-                        CriadoEm = DateTime.UtcNow
-                    });
-                }
-                await db.SaveChangesAsync();
-                var saved = await db.Usuarios.AsNoTracking().FirstAsync(u => u.Id == body.Id);
-                return Results.Ok(MapearUsuario(saved));
-            });
-        }
+                    Id = body.Id,
+                    Email = body.Email.Trim(),
+                    Perfil = perfil,
+                    Ativo = true,
+                    CriadoEm = DateTime.UtcNow
+                });
+            }
+            await db.SaveChangesAsync();
+            var saved = await db.Usuarios.AsNoTracking().FirstAsync(u => u.Id == body.Id);
+            return Results.Ok(MapearUsuario(saved));
+        });
     }
 
     private static object MapearUsuario(UsuarioSistema u) => new

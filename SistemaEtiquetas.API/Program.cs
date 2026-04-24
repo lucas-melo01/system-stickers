@@ -74,6 +74,14 @@ app.MapGet("/diag/cors", () => Results.Ok(new
     corsOriginsEnv = Environment.GetEnvironmentVariable("CORS_ORIGINS"),
 }));
 
+app.MapGet("/diag/auth", (IConfiguration cfg) => Results.Ok(new
+{
+    authConfigured = ApiV1Routes.IsAuthConfigured(cfg),
+    hasSupabaseUrl = !string.IsNullOrEmpty(cfg["Auth:SupabaseUrl"] ?? Environment.GetEnvironmentVariable("SUPABASE_URL")),
+    hasSupabaseJwtSecret = !string.IsNullOrEmpty(cfg["Auth:SupabaseJwtSecret"] ?? Environment.GetEnvironmentVariable("SUPABASE_JWT_SECRET")),
+    bootstrapAdminEmails = cfg["Auth:BootstrapAdminEmails"] ?? Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_EMAILS"),
+}));
+
 app.MapGet("/health", (AppDbContext db) =>
 {
     try
