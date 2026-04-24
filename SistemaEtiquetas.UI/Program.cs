@@ -6,6 +6,12 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 👇 permite sobrescrever via argumento
+var url = args.FirstOrDefault(a => a.StartsWith("http"))
+          ?? "http://localhost:5000";
+
+builder.WebHost.UseUrls(url);
+
 // Configure culture to pt-BR for currency display (R$ instead of £)
 var ptBr = new CultureInfo("pt-BR");
 CultureInfo.DefaultThreadCurrentCulture = ptBr;
@@ -113,12 +119,12 @@ catch (Exception ex)
     Console.WriteLine($"⚠️ Aviso: Não conseguiu aplicar migrations: {ex.Message}");
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-app.MapRazorPages().WithStaticAssets();
+app.UseStaticFiles();
+app.MapRazorPages();
 
 // When application is stopping, ensure we kill the background API process if we started it
 var lifetime = app.Lifetime;
