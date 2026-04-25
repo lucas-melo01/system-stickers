@@ -221,10 +221,10 @@ public static class ApiV1Routes
             return Results.Ok(new { item.Id, item.Impresso });
         });
 
-        g.MapGet("/pedido-itens/pendentes-impressao", async (AppDbContext db) =>
+        g.MapGet("/pedido-itens/pendentes-impressao", async (AppDbContext db, string? q, DateTime? data, string? ids) =>
         {
-            var list = await db.PedidoItens.AsNoTracking()
-                .Where(i => !i.Impresso)
+            var query = AplicarFiltrosPendentes(db.PedidoItens.AsNoTracking().Include(i => i.Pedido), q, data, ids);
+            var list = await query
                 .OrderBy(i => i.Id)
                 .Select(i => new PendenteImpressaoDto
                 {
@@ -237,13 +237,12 @@ public static class ApiV1Routes
 
         // Lote de ZPL para impressão directa (QZ Tray). Cada elemento traz o
         // itemId e a string ZPL já formatada. O front envia para o QZ na ordem.
-        g.MapGet("/pedido-itens/pendentes-impressao/zpl.json", async (AppDbContext db) =>
+        // Aceita os mesmos filtros que a lista de pedidos (q, data) e ainda
+        // ids=CSV de pedidoItemId quando o operador escolhe linhas específicas.
+        g.MapGet("/pedido-itens/pendentes-impressao/zpl.json", async (AppDbContext db, string? q, DateTime? data, string? ids) =>
         {
-            var itens = await db.PedidoItens.AsNoTracking()
-                .Include(i => i.Pedido)
-                .Where(i => !i.Impresso)
-                .OrderBy(i => i.Id)
-                .ToListAsync();
+            var query = AplicarFiltrosPendentes(db.PedidoItens.AsNoTracking().Include(i => i.Pedido), q, data, ids);
+            var itens = await query.OrderBy(i => i.Id).ToListAsync();
             var svc = new EtiquetaService();
             var payload = itens.Select(it => new
             {
@@ -393,5 +392,49 @@ public static class ApiV1Routes
         u.Ativo,
         u.CriadoEm
     };
+
+    // Aplica os mesmos filtros usados em /pedidos sobre a lista de itens
+    // pendentes. Quando "ids" vem preenchido, ignora q/data e devolve só
+    // os PedidoItem.Id contidos no CSV — isto suporta o "imprimir
+    // seleccionados" do front-end.
+    private static IQueryable<PedidoItem> AplicarFiltrosPendentes(
+        IQueryable<PedidoItem> source,
+        string? q,
+        DateTime? data,
+        string? ids)
+    {
+        var query = source.Where(i => !i.Impresso);
+
+        if (!string.IsNullOrWhiteSpace(ids))
+        {
+            var idList = ids
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
+                .Where(n => n > 0)
+                .Distinct()
+                .ToList();
+            if (idList.Count == 0)
+                return query.Where(_ => false);
+            return query.Where(i => idList.Contains(i.Id));
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var t = q.Trim().ToLower();
+            query = query.Where(i =>
+                (i.Pedido.PedidoExternoId != null && i.Pedido.PedidoExternoId.ToLower().Contains(t)) ||
+                (i.Pedido.NomeCliente != null && i.Pedido.NomeCliente.ToLower().Contains(t)) ||
+                (i.Pedido.ClienteCpf != null && i.Pedido.ClienteCpf.ToLower().Contains(t)));
+        }
+
+        if (data.HasValue)
+        {
+            var dataFiltro = DateTime.SpecifyKind(data.Value.Date, DateTimeKind.Utc);
+            var prox = dataFiltro.AddDays(1);
+            query = query.Where(i => i.Pedido.DataPedido >= dataFiltro && i.Pedido.DataPedido < prox);
+        }
+
+        return query;
+    }
 
 }

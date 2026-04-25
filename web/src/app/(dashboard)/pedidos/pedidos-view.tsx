@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -58,6 +60,53 @@ export function PedidosView({
     return sp.toString();
   };
 
+  // IDs pendentes da página actual — únicos elegíveis para selecção em massa.
+  const pendentesNaPagina = useMemo(
+    () => result.items.filter((r) => !r.impresso).map((r) => r.pedidoItemId),
+    [result.items]
+  );
+
+  const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
+
+  // Ao mudar de página/filtro a selecção visível seria enganadora — limpamos.
+  // Identificamos a "página" pelo conjunto de IDs presentes na resposta.
+  const idsResposta = useMemo(
+    () => result.items.map((r) => r.pedidoItemId).join(","),
+    [result.items]
+  );
+  useEffect(() => {
+    setSelecionados(new Set());
+  }, [idsResposta]);
+
+  const todosSelecionados =
+    pendentesNaPagina.length > 0 &&
+    pendentesNaPagina.every((id) => selecionados.has(id));
+  const algumSelecionado =
+    pendentesNaPagina.some((id) => selecionados.has(id)) && !todosSelecionados;
+
+  function toggleTodos() {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (todosSelecionados) {
+        for (const id of pendentesNaPagina) next.delete(id);
+      } else {
+        for (const id of pendentesNaPagina) next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleUm(id: number) {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const idsSelecionados = useMemo(() => Array.from(selecionados), [selecionados]);
+
   return (
     <Box>
       <QzPrinterStatus />
@@ -78,7 +127,12 @@ export function PedidosView({
           <Button component={Link} href="/pedidos/novo" variant="contained" color="secondary" size="small" sx={{ fontWeight: 800 }}>
             + Adicionar pedido
           </Button>
-          <PrintAllPendingButton />
+          <PrintAllPendingButton
+            variant="selecionados"
+            selectedIds={idsSelecionados}
+            onPrinted={() => setSelecionados(new Set())}
+          />
+          <PrintAllPendingButton q={q} data={data} />
         </Box>
       </Box>
       <Paper
@@ -104,6 +158,17 @@ export function PedidosView({
                 "& .MuiTableCell-head": { fontWeight: 700, color: "text.primary" },
               }}
             >
+              <TableCell padding="checkbox">
+                <Checkbox
+                  size="small"
+                  color="primary"
+                  disabled={pendentesNaPagina.length === 0}
+                  checked={todosSelecionados}
+                  indeterminate={algumSelecionado}
+                  onChange={toggleTodos}
+                  slotProps={{ input: { "aria-label": "Seleccionar todos os pendentes da página" } }}
+                />
+              </TableCell>
               <TableCell>Data</TableCell>
               <TableCell>Pedido</TableCell>
               <TableCell>Cliente</TableCell>
@@ -120,38 +185,62 @@ export function PedidosView({
           <TableBody>
             {result.items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} sx={{ color: "text.secondary" }}>
+                <TableCell colSpan={8} sx={{ color: "text.secondary" }}>
                   Nenhum registro
                 </TableCell>
               </TableRow>
             )}
-            {result.items.map((r) => (
-              <TableRow key={r.pedidoItemId} hover>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>{r.dataPedido?.slice(0, 10)}</TableCell>
-                <TableCell>{r.pedidoExternoId}</TableCell>
-                <TableCell sx={{ maxWidth: 200 }} title={r.nomeCliente}>
-                  {r.nomeCliente} {r.clienteCpf}
-                </TableCell>
-                <TableCell sx={{ maxWidth: 220 }} title={`${r.produto} — ${r.cor} — ${r.tamanho}`}>
-                  {r.produto} — {r.cor ?? "—"} — {r.tamanho ?? "—"}
-                </TableCell>
-                <TableCell align="right">{r.quantidade}</TableCell>
-                <TableCell>
-                  {r.impresso ? (
-                    <Typography component="span" variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
-                      Impresso
-                    </Typography>
-                  ) : (
-                    <Typography component="span" variant="body2" color="warning.dark">
-                      Pendente
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <PedidoRowActions itemId={r.pedidoItemId} />
-                </TableCell>
-              </TableRow>
-            ))}
+            {result.items.map((r) => {
+              const checked = selecionados.has(r.pedidoItemId);
+              return (
+                <TableRow
+                  key={r.pedidoItemId}
+                  hover
+                  selected={checked}
+                  onClick={(e) => {
+                    if (r.impresso) return;
+                    const target = e.target as HTMLElement;
+                    if (target.closest("button, a, input")) return;
+                    toggleUm(r.pedidoItemId);
+                  }}
+                  sx={{ cursor: r.impresso ? "default" : "pointer" }}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      color="primary"
+                      checked={checked}
+                      disabled={r.impresso}
+                      onChange={() => toggleUm(r.pedidoItemId)}
+                      slotProps={{ input: { "aria-label": `Seleccionar item ${r.pedidoItemId}` } }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{r.dataPedido?.slice(0, 10)}</TableCell>
+                  <TableCell>{r.pedidoExternoId}</TableCell>
+                  <TableCell sx={{ maxWidth: 200 }} title={r.nomeCliente}>
+                    {r.nomeCliente} {r.clienteCpf}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 220 }} title={`${r.produto} — ${r.cor} — ${r.tamanho}`}>
+                    {r.produto} — {r.cor ?? "—"} — {r.tamanho ?? "—"}
+                  </TableCell>
+                  <TableCell align="right">{r.quantidade}</TableCell>
+                  <TableCell>
+                    {r.impresso ? (
+                      <Typography component="span" variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
+                        Impresso
+                      </Typography>
+                    ) : (
+                      <Typography component="span" variant="body2" color="warning.dark">
+                        Pendente
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    <PedidoRowActions itemId={r.pedidoItemId} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

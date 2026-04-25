@@ -12,7 +12,16 @@ export async function GET(request: NextRequest) {
   }
   const auth = request.headers.get("authorization");
   if (!auth) return NextResponse.json({ error: "Sem Authorization" }, { status: 401 });
-  const r = await fetch(`${base}/api/pedido-itens/pendentes-impressao`, {
+
+  const inSp = request.nextUrl.searchParams;
+  const out = new URLSearchParams();
+  for (const k of ["q", "data", "ids"]) {
+    const v = inSp.get(k);
+    if (v) out.set(k, v);
+  }
+  const qs = out.toString();
+
+  const r = await fetch(`${base}/api/pedido-itens/pendentes-impressao${qs ? `?${qs}` : ""}`, {
     headers: { Authorization: auth },
     cache: "no-store",
   });
