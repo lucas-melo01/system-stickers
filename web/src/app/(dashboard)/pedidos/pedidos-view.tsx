@@ -15,6 +15,7 @@ import Box from "@mui/material/Box";
 import { PedidoRowActions } from "./row-actions";
 import { PrintAllPendingButton } from "./print-all-pending-button";
 import { PaginationBar } from "@/components/PaginationBar";
+import { QzPrinterStatus } from "@/components/QzPrinterStatus";
 
 type Row = {
   pedidoId: number;
@@ -59,6 +60,7 @@ export function PedidosView({
 
   return (
     <Box>
+      <QzPrinterStatus />
       <Box
         sx={{
           display: "flex",

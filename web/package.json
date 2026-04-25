@@ -20,6 +20,7 @@
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
     "next": "15.1.12",
+    "qz-tray": "^2.2.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

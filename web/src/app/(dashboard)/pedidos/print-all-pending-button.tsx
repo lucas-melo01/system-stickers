@@ -1,53 +1,80 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { printZplBatch, resolvePrinter, QzNotAvailableError } from "@/lib/qz-print";
 
-const PRINT_WINDOW_FEATURES = "width=560,height=520,resizable=yes,scrollbars=yes,noopener=no";
+type ZplItem = { itemId: number; zpl: string };
 
 export function PrintAllPendingButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const popupRef = useRef<Window | null>(null);
-  const watchTimer = useRef<number | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (watchTimer.current) window.clearInterval(watchTimer.current);
-    };
-  }, []);
-
-  function run() {
-    if (
-      !window.confirm(
-        "Imprimir todas as etiquetas pendentes? Um único diálogo de impressão será aberto com todas elas."
-      )
-    ) {
-      return;
-    }
+  async function run() {
     setMsg(null);
+    setErro(null);
     setLoading(true);
-    const w = window.open("/print/etiquetas/pendentes", "print-pendentes", PRINT_WINDOW_FEATURES);
-    if (!w) {
-      setLoading(false);
-      setMsg("O browser bloqueou o pop-up. Autorize pop-ups para este site.");
-      return;
-    }
-    popupRef.current = w;
-    if (watchTimer.current) window.clearInterval(watchTimer.current);
-    watchTimer.current = window.setInterval(() => {
-      if (!popupRef.current || popupRef.current.closed) {
-        if (watchTimer.current) window.clearInterval(watchTimer.current);
-        watchTimer.current = null;
-        popupRef.current = null;
-        setLoading(false);
-        router.refresh();
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Sessão expirou. Volte a entrar.");
+
+      // 1. Pede o lote de ZPLs ao backend.
+      const r = await fetch("/api/pedido-itens/pendentes-impressao/zpl", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!r.ok) throw new Error((await r.text()) || `HTTP ${r.status}`);
+      const lista = (await r.json()) as ZplItem[];
+      if (!Array.isArray(lista) || lista.length === 0) {
+        setMsg("Não há etiquetas pendentes.");
+        return;
       }
-    }, 600);
+
+      if (
+        !window.confirm(
+          `Imprimir ${lista.length} etiqueta(s) pendente(s)? Será enviado directo à impressora.`
+        )
+      ) {
+        return;
+      }
+
+      // 2. Resolve impressora e envia tudo numa só operação.
+      const printer = await resolvePrinter();
+      await printZplBatch(printer, lista.map((x) => x.zpl));
+
+      // 3. Marca todas como impressas em paralelo.
+      await Promise.allSettled(
+        lista.map((it) =>
+          fetch(`/api/pedido-itens/${it.itemId}/marcar-impresso`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        )
+      );
+
+      setMsg(`${lista.length} etiqueta(s) enviada(s) para ${printer}.`);
+      router.refresh();
+    } catch (e) {
+      if (e instanceof QzNotAvailableError) {
+        setErro(
+          "QZ Tray não detectado. Instale o programa de impressão (ver banner no topo)."
+        );
+      } else {
+        setErro(String(e instanceof Error ? e.message : e));
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -63,8 +90,13 @@ export function PrintAllPendingButton() {
         {loading ? "A imprimir…" : "Imprimir todas as pendentes"}
       </Button>
       {msg && (
-        <Typography variant="body2" color="text.secondary" sx={{ width: "100%" }}>
+        <Typography variant="body2" color="success.main" sx={{ width: "100%" }}>
           {msg}
+        </Typography>
+      )}
+      {erro && (
+        <Typography variant="body2" color="error.main" sx={{ width: "100%" }}>
+          {erro}
         </Typography>
       )}
     </Box>
