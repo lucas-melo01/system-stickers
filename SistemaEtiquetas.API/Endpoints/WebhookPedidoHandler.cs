@@ -41,17 +41,25 @@ public static class WebhookPedidoHandler
             ValorFrete = valorFrete,
             jsonWebhook = payload
         };
+        // Regra: 1 linha = 1 etiqueta. Mesmo que o payload traga quantidade > 1
+        // explodimos em N linhas com Quantidade=1 (cada uma será uma etiqueta
+        // individual). Webhook não traz valores monetários, então não há
+        // distinção entre primeira linha e cópias.
         foreach (var item in pedidoDto.itens)
         {
             var (sku, cor, tamanho) = ParsearSku(item.sku);
-            pedido.Itens.Add(new PedidoItem
+            var n = item.quantidade > 0 ? item.quantidade : 1;
+            for (var i = 0; i < n; i++)
             {
-                Produto = item.nome,
-                SKU = sku,
-                Cor = cor,
-                Tamanho = tamanho,
-                Quantidade = item.quantidade
-            });
+                pedido.Itens.Add(new PedidoItem
+                {
+                    Produto = item.nome,
+                    SKU = sku,
+                    Cor = cor,
+                    Tamanho = tamanho,
+                    Quantidade = 1
+                });
+            }
         }
         db.Pedidos.Add(pedido);
         await db.SaveChangesAsync();

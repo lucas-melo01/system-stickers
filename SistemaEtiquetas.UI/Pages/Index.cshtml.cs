@@ -155,20 +155,26 @@ public class IndexModel : PageModel
                 Itens = new List<PedidoItem>()
             };
 
-            // Adicionar itens
+            // Regra: 1 linha = 1 etiqueta. Primeira linha leva os valores
+            // monetários cheios, as cópias herdam ValorCusto/ValorVenda = 0
+            // para preservar o total histórico do pedido.
             foreach (var item in AddPedidoModel.Itens.Where(i => !string.IsNullOrWhiteSpace(i.Produto)))
             {
-                pedido.Itens.Add(new PedidoItem
+                var n = item.Quantidade > 0 ? item.Quantidade : 1;
+                for (var i = 0; i < n; i++)
                 {
-                    Produto = item.Produto,
-                    SKU = item.SKU,
-                    Cor = item.Cor,
-                    Tamanho = item.Tamanho,
-                    Quantidade = item.Quantidade > 0 ? item.Quantidade : 1,
-                    ValorCusto = item.ValorCusto,
-                    ValorVenda = item.ValorVenda,
-                    Impresso = false
-                });
+                    pedido.Itens.Add(new PedidoItem
+                    {
+                        Produto = item.Produto,
+                        SKU = item.SKU,
+                        Cor = item.Cor,
+                        Tamanho = item.Tamanho,
+                        Quantidade = 1,
+                        ValorCusto = i == 0 ? item.ValorCusto : 0,
+                        ValorVenda = i == 0 ? item.ValorVenda : 0,
+                        Impresso = false
+                    });
+                }
             }
 
             _db.Pedidos.Add(pedido);

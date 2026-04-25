@@ -173,9 +173,6 @@ export function PedidosView({
               <TableCell>Pedido</TableCell>
               <TableCell>Cliente</TableCell>
               <TableCell>Item</TableCell>
-              <TableCell width={72} align="right">
-                Qtd
-              </TableCell>
               <TableCell>Status</TableCell>
               <TableCell width={200} align="right">
                 Ações
@@ -185,7 +182,7 @@ export function PedidosView({
           <TableBody>
             {result.items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} sx={{ color: "text.secondary" }}>
+                <TableCell colSpan={7} sx={{ color: "text.secondary" }}>
                   Nenhum registro
                 </TableCell>
               </TableRow>
@@ -223,7 +220,6 @@ export function PedidosView({
                   <TableCell sx={{ maxWidth: 220 }} title={`${r.produto} — ${r.cor} — ${r.tamanho}`}>
                     {r.produto} — {r.cor ?? "—"} — {r.tamanho ?? "—"}
                   </TableCell>
-                  <TableCell align="right">{r.quantidade}</TableCell>
                   <TableCell>
                     {r.impresso ? (
                       <Typography component="span" variant="body2" color="success.main" sx={{ fontWeight: 600 }}>

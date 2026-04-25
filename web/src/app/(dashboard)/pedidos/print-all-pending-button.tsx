@@ -14,7 +14,7 @@ type Props = {
   // Filtros activos na página — usados quando não há selecção explícita.
   q?: string;
   data?: string;
-  // IDs de PedidoItem seleccionados pelo operador. Quando preenchido,
+  // IDs de PedidoItem selecionados pelo operador. Quando preenchido,
   // tem precedência absoluta sobre os filtros (q/data são ignorados).
   selectedIds?: number[];
   // Permite ao componente pai limpar a selecção depois da impressão.
@@ -40,7 +40,7 @@ export function PrintAllPendingButton({
   const temSelecao = ids.length > 0;
   const temFiltro = Boolean(q || data);
 
-  // Botão da selecção só faz sentido quando há itens seleccionados.
+  // Botão da selecção só faz sentido quando há itens selecionados.
   if (isSelecao && !temSelecao) return null;
 
   async function run() {
@@ -75,7 +75,7 @@ export function PrintAllPendingButton({
       if (!Array.isArray(lista) || lista.length === 0) {
         setMsg(
           isSelecao
-            ? "Nenhum item pendente entre os seleccionados."
+            ? "Nenhum item pendente entre os selecionados."
             : temFiltro
               ? "Não há etiquetas pendentes para o filtro actual."
               : "Não há etiquetas pendentes."
@@ -129,7 +129,7 @@ export function PrintAllPendingButton({
 
   const label = (() => {
     if (isSelecao) {
-      const base = `Imprimir seleccionados (${ids.length})`;
+      const base = `Imprimir selecionados (${ids.length})`;
       return loading ? "A imprimir…" : base;
     }
     if (loading) return "A imprimir…";

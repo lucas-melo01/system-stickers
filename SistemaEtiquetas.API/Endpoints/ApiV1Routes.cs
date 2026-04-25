@@ -153,16 +153,23 @@ public static class ApiV1Routes
             };
             foreach (var it in body.Itens.Where(x => !string.IsNullOrWhiteSpace(x.Produto)))
             {
-                pedido.Itens.Add(new PedidoItem
+                // Regra: 1 linha = 1 etiqueta. A primeira linha leva os valores
+                // monetários cheios; as cópias herdam ValorCusto/ValorVenda = 0
+                // para preservar o total histórico do pedido.
+                var n = it.Quantidade > 0 ? it.Quantidade : 1;
+                for (var i = 0; i < n; i++)
                 {
-                    Produto = it.Produto,
-                    SKU = it.SKU ?? "",
-                    Cor = it.Cor,
-                    Tamanho = it.Tamanho,
-                    Quantidade = it.Quantidade > 0 ? it.Quantidade : 1,
-                    ValorCusto = it.ValorCusto,
-                    ValorVenda = it.ValorVenda
-                });
+                    pedido.Itens.Add(new PedidoItem
+                    {
+                        Produto = it.Produto,
+                        SKU = it.SKU ?? "",
+                        Cor = it.Cor,
+                        Tamanho = it.Tamanho,
+                        Quantidade = 1,
+                        ValorCusto = i == 0 ? it.ValorCusto : 0,
+                        ValorVenda = i == 0 ? it.ValorVenda : 0
+                    });
+                }
             }
             db.Pedidos.Add(pedido);
             await db.SaveChangesAsync();
@@ -183,7 +190,26 @@ public static class ApiV1Routes
             item.Produto = body.Produto;
             item.Cor = string.IsNullOrWhiteSpace(body.Cor) ? null : body.Cor;
             item.Tamanho = string.IsNullOrWhiteSpace(body.Tamanho) ? null : body.Tamanho;
-            item.Quantidade = body.Quantidade > 0 ? body.Quantidade : 1;
+
+            // Regra: 1 linha = 1 etiqueta. Se o operador editar para Quantidade > 1
+            // mantemos a linha original com Qtd=1 (e os valores monetários originais)
+            // e geramos N-1 cópias pendentes com ValorCusto/ValorVenda = 0.
+            var n = body.Quantidade > 0 ? body.Quantidade : 1;
+            item.Quantidade = 1;
+            for (var i = 1; i < n; i++)
+            {
+                pedido.Itens.Add(new PedidoItem
+                {
+                    Produto = item.Produto,
+                    SKU = item.SKU,
+                    Cor = item.Cor,
+                    Tamanho = item.Tamanho,
+                    Quantidade = 1,
+                    Impresso = false,
+                    ValorCusto = 0,
+                    ValorVenda = 0
+                });
+            }
             await db.SaveChangesAsync();
             return Results.Ok(item);
         });
@@ -396,7 +422,7 @@ public static class ApiV1Routes
     // Aplica os mesmos filtros usados em /pedidos sobre a lista de itens
     // pendentes. Quando "ids" vem preenchido, ignora q/data e devolve só
     // os PedidoItem.Id contidos no CSV — isto suporta o "imprimir
-    // seleccionados" do front-end.
+    // selecionados" do front-end.
     private static IQueryable<PedidoItem> AplicarFiltrosPendentes(
         IQueryable<PedidoItem> source,
         string? q,
