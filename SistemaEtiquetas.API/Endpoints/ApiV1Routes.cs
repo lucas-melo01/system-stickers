@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.DTO;
 using SistemaEtiquetas.API.Extensions;
 using SistemaEtiquetas.API.Services;
+using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.Text.Json;
@@ -85,8 +86,10 @@ public static class ApiV1Routes
 
             if (data.HasValue)
             {
-                var dataFiltro = DateTime.SpecifyKind(data.Value.Date, DateTimeKind.Utc);
-                var prox = dataFiltro.AddDays(1);
+                // Filtro digitado pelo operador é dia-calendário em Brasília;
+                // converte para o intervalo UTC equivalente.
+                var dataFiltro = TimeZoneBrasil.DeBrasiliaParaUtc(data.Value.Date);
+                var prox = TimeZoneBrasil.DeBrasiliaParaUtc(data.Value.Date.AddDays(1));
                 query = query.Where(p => p.DataPedido >= dataFiltro && p.DataPedido < prox);
             }
 
@@ -148,7 +151,7 @@ public static class ApiV1Routes
                 TipoEnvio = body.TipoEnvio,
                 FormaPagamento = body.FormaPagamento,
                 ValorFrete = body.ValorFrete,
-                DataPedido = body.DataPedido.ToUniversalTime(),
+                DataPedido = TimeZoneBrasil.ParaUtcConsiderandoBrasilia(body.DataPedido),
                 DataCriacao = DateTime.UtcNow
             };
             foreach (var it in body.Itens.Where(x => !string.IsNullOrWhiteSpace(x.Produto)))
@@ -281,10 +284,12 @@ public static class ApiV1Routes
         g.MapGet("/relatorios/vendas", async (AppDbContext db, DateTime? inicio, DateTime? fim) =>
         {
             if (inicio == null || fim == null)
-                return Results.BadRequest("Parâmetros inicio e fim (UTC date) são obrigatórios.");
+                return Results.BadRequest("Parâmetros inicio e fim são obrigatórios.");
 
-            var i0 = DateTime.SpecifyKind(inicio.Value.Date, DateTimeKind.Utc);
-            var f0 = DateTime.SpecifyKind(fim.Value.Date.AddDays(1), DateTimeKind.Utc);
+            // Datas vêm como dia-calendário em Brasília; convertemos os limites
+            // para UTC antes de filtrar contra a coluna timestamptz.
+            var i0 = TimeZoneBrasil.DeBrasiliaParaUtc(inicio.Value.Date);
+            var f0 = TimeZoneBrasil.DeBrasiliaParaUtc(fim.Value.Date.AddDays(1));
 
             var pedidos = await db.Pedidos.AsNoTracking()
                 .Include(p => p.Itens)
@@ -320,8 +325,8 @@ public static class ApiV1Routes
             if (inicio == null || fim == null)
                 return Results.BadRequest("Parâmetros inicio e fim são obrigatórios.");
 
-            var i0 = DateTime.SpecifyKind(inicio.Value.Date, DateTimeKind.Utc);
-            var f0 = DateTime.SpecifyKind(fim.Value.Date.AddDays(1), DateTimeKind.Utc);
+            var i0 = TimeZoneBrasil.DeBrasiliaParaUtc(inicio.Value.Date);
+            var f0 = TimeZoneBrasil.DeBrasiliaParaUtc(fim.Value.Date.AddDays(1));
 
             var pedidos = await db.Pedidos.AsNoTracking()
                 .Include(p => p.Itens)
@@ -455,8 +460,8 @@ public static class ApiV1Routes
 
         if (data.HasValue)
         {
-            var dataFiltro = DateTime.SpecifyKind(data.Value.Date, DateTimeKind.Utc);
-            var prox = dataFiltro.AddDays(1);
+            var dataFiltro = TimeZoneBrasil.DeBrasiliaParaUtc(data.Value.Date);
+            var prox = TimeZoneBrasil.DeBrasiliaParaUtc(data.Value.Date.AddDays(1));
             query = query.Where(i => i.Pedido.DataPedido >= dataFiltro && i.Pedido.DataPedido < prox);
         }
 

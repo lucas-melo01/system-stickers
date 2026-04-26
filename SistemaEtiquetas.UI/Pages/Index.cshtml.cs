@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SistemaEtiquetas.UI.Services;
+using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.ComponentModel.DataAnnotations;
@@ -73,8 +74,8 @@ public class IndexModel : PageModel
 
         if (DataPedido.HasValue)
         {
-            var dataFiltro = DateTime.SpecifyKind(DataPedido.Value.Date, DateTimeKind.Utc);
-            var proximoDia = dataFiltro.AddDays(1);
+            var dataFiltro = TimeZoneBrasil.DeBrasiliaParaUtc(DataPedido.Value.Date);
+            var proximoDia = TimeZoneBrasil.DeBrasiliaParaUtc(DataPedido.Value.Date.AddDays(1));
             query = query.Where(p => p.DataPedido >= dataFiltro && p.DataPedido < proximoDia);
         }
 
@@ -150,7 +151,7 @@ public class IndexModel : PageModel
                 TipoEnvio = AddPedidoModel.TipoEnvio,
                 FormaPagamento = AddPedidoModel.FormaPagamento,
                 ValorFrete = AddPedidoModel.ValorFrete,
-                DataPedido = AddPedidoModel.DataPedido.ToUniversalTime(),
+                DataPedido = TimeZoneBrasil.ParaUtcConsiderandoBrasilia(AddPedidoModel.DataPedido),
                 DataCriacao = DateTime.UtcNow,
                 Itens = new List<PedidoItem>()
             };
@@ -208,8 +209,8 @@ public class IndexModel : PageModel
 
         if (DataPedido.HasValue)
         {
-            var dataFiltro = DateTime.SpecifyKind(DataPedido.Value.Date, DateTimeKind.Utc);
-            var proximoDia = dataFiltro.AddDays(1);
+            var dataFiltro = TimeZoneBrasil.DeBrasiliaParaUtc(DataPedido.Value.Date);
+            var proximoDia = TimeZoneBrasil.DeBrasiliaParaUtc(DataPedido.Value.Date.AddDays(1));
             query = query.Where(p => p.DataPedido >= dataFiltro && p.DataPedido < proximoDia);
         }
 

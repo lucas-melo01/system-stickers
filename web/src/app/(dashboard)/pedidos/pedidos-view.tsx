@@ -18,6 +18,7 @@ import { PedidoRowActions } from "./row-actions";
 import { PrintAllPendingButton } from "./print-all-pending-button";
 import { PaginationBar } from "@/components/PaginationBar";
 import { QzPrinterStatus } from "@/components/QzPrinterStatus";
+import { formatDataBR } from "@/lib/datetime";
 
 type Row = {
   pedidoId: number;
@@ -212,7 +213,7 @@ export function PedidosView({
                       slotProps={{ input: { "aria-label": `Seleccionar item ${r.pedidoItemId}` } }}
                     />
                   </TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{r.dataPedido?.slice(0, 10)}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDataBR(r.dataPedido)}</TableCell>
                   <TableCell>{r.pedidoExternoId}</TableCell>
                   <TableCell sx={{ maxWidth: 200 }} title={r.nomeCliente}>
                     {r.nomeCliente} {r.clienteCpf}

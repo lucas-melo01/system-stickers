@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,8 +35,8 @@ public class RelatoriosModel : PageModel
         // Se houver datas, buscar os pedidos
         if (DataInicio.HasValue && DataFim.HasValue)
         {
-            var dataInicio = DateTime.SpecifyKind(DataInicio.Value.Date, DateTimeKind.Utc);
-            var dataFim = DateTime.SpecifyKind(DataFim.Value.Date.AddDays(1), DateTimeKind.Utc);
+            var dataInicio = TimeZoneBrasil.DeBrasiliaParaUtc(DataInicio.Value.Date);
+            var dataFim = TimeZoneBrasil.DeBrasiliaParaUtc(DataFim.Value.Date.AddDays(1));
 
             var pedidos = await _db.Pedidos
                 .Include(p => p.Itens)
@@ -76,8 +77,8 @@ public class RelatoriosModel : PageModel
                 return RedirectToPage();
             }
 
-            var dataInicioKind = DateTime.SpecifyKind(dataInicio.Value.Date, DateTimeKind.Utc);
-            var dataFimKind = DateTime.SpecifyKind(dataFim.Value.Date.AddDays(1), DateTimeKind.Utc);
+            var dataInicioKind = TimeZoneBrasil.DeBrasiliaParaUtc(dataInicio.Value.Date);
+            var dataFimKind = TimeZoneBrasil.DeBrasiliaParaUtc(dataFim.Value.Date.AddDays(1));
 
             var pedidos = await _db.Pedidos
                 .Include(p => p.Itens)
@@ -120,7 +121,7 @@ public class RelatoriosModel : PageModel
             {
                 foreach (var item in pedido.Itens)
                 {
-                    worksheet.Cells[row, 1].Value = pedido.DataPedido.ToString("dd/MM/yyyy");
+                    worksheet.Cells[row, 1].Value = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy");
                     worksheet.Cells[row, 2].Value = item.SKU ?? "N/A";
                     worksheet.Cells[row, 3].Value = pedido.Vendedor ?? "Manual";
                     worksheet.Cells[row, 4].Value = $"{item.Produto} - {item.Cor ?? "N/A"} - {item.Tamanho ?? "N/A"}";

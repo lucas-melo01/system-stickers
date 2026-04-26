@@ -1,4 +1,5 @@
-﻿using SistemaEtiquetas.Domain.Entities;
+﻿using SistemaEtiquetas.Domain;
+using SistemaEtiquetas.Domain.Entities;
 
 namespace SistemaEtiquetas.API.Services
 {
@@ -18,7 +19,7 @@ namespace SistemaEtiquetas.API.Services
         // ^LH0,0 e ^LS0 são seguros por job — apenas fixam a origem e o shift.
         public string GerarZpl(Pedido pedido, PedidoItem item)
         {
-            var data = pedido.DataPedido.ToString("dd/MM/yyyy");
+            var data = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy");
             var nome = pedido.NomeCliente ?? "";
             var modelo = item.Produto ?? "";
             var cor = item.Cor ?? "N/A";

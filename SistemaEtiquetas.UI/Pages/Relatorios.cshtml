@@ -74,7 +74,7 @@
             @foreach (var venda in Model.Vendas)
             {
                 <tr>
-                    <td>@venda.DataPedido.ToString("dd/MM/yyyy")</td>
+                    <td>@TimeZoneBrasil.DeUtcParaBrasilia(venda.DataPedido).ToString("dd/MM/yyyy")</td>
                     <td>@venda.SKU</td>
                     <td>
                         <span class="badge bg-info">@venda.Vendedor</span>

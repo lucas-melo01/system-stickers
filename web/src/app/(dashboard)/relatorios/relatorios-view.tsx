@@ -12,6 +12,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { ExportExcelButton } from "./export-button";
+import { formatDataBR } from "@/lib/datetime";
 
 type Venda = {
   dataPedido: string;
@@ -86,7 +87,7 @@ export function RelatoriosView({
           <TableBody>
             {rows.map((r, i) => (
               <TableRow key={i} hover>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>{r.dataPedido?.slice(0, 10)}</TableCell>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDataBR(r.dataPedido)}</TableCell>
                 <TableCell>{r.sku}</TableCell>
                 <TableCell>{r.vendedor}</TableCell>
                 <TableCell sx={{ maxWidth: 240 }} title={r.peca}>

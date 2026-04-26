@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.DTO;
+using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.Text.Json;
@@ -22,10 +23,11 @@ public static class WebhookPedidoHandler
         if (await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString()))
             return Results.Ok("Pedido já processado");
 
-        var dataPedido = pedidoDto.data_criacao;
-        if (dataPedido.Kind == DateTimeKind.Unspecified)
-            dataPedido = DateTime.SpecifyKind(dataPedido, DateTimeKind.Utc);
-        dataPedido = dataPedido.ToUniversalTime();
+        // A marketplace tipicamente envia data_criacao sem indicador de zona
+        // (Kind=Unspecified). Antes assumíamos UTC e o registo ficava 3h
+        // adiantado em relação a Brasília. Agora interpretamos Unspecified
+        // como horário de Brasília. Se vier com 'Z' ou offset, respeita-se.
+        var dataPedido = TimeZoneBrasil.ParaUtcConsiderandoBrasilia(pedidoDto.data_criacao);
         var tipoEnvio = pedidoDto.envios?.FirstOrDefault()?.forma_envio?.nome ?? "N/A";
         var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor ?? pedidoDto.valor_envio;
         var formaPagamento = pedidoDto.pagamentos?.FirstOrDefault()?.forma_pagamento?.nome ?? "N/A";
