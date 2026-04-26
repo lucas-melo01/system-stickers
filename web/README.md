@@ -1,5 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Variáveis de ambiente (gestão de utilizadores e API)
+
+| Variável | Onde | Função |
+|----------|------|--------|
+| `NEXT_PUBLIC_API_URL` | Vercel / `.env.local` | URL pública do backend .NET (sem barra no fim). Usada nas rotas BFF (`/api/...`) que encaminham para a API, incl. `GET/PATCH /api/admin/usuarios` e criação de convites. |
+| `NEXT_PUBLIC_SUPABASE_URL` + chave anónima | Já usadas pelo cliente Supabase | Login na app. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Só no servidor (Vercel, nunca no cliente) | Necessária em `POST /api/invite-user` para criar utilizadores no Supabase Auth (formulário em **Utilizadores**). |
+| `ADMIN_INVITE_EMAILS` | Opcional (servidor) | Lista de e-mails separada por vírgula que podem convidar novos users se ainda não forem `Admin` na tabela (bootstrap de permissões). |
+
+**Na API .NET (Render, etc.):** `SUPABASE_URL` (ou `Auth:SupabaseUrl`) e `SUPABASE_JWT_SECRET` (ou `Auth:SupabaseJwtSecret`) — sem isto o JWT não valida (rotas devolvem 501). Para o **primeiro administrador** na tabela `Usuarios`, definir `Auth:BootstrapAdminEmails` ou a variável `BOOTSTRAP_ADMIN_EMAILS` com o e-mail; no primeiro login com esse e-mail, o `GET /api/auth/sync` cria a linha com perfil `Admin`. Depois disso, a página **Utilizadores** consegue listar e aprovisionar (desde que `SUPABASE_SERVICE_ROLE_KEY` exista no Next).
+
 ## Getting Started
 
 First, run the development server:

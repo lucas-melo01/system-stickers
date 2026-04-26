@@ -2,7 +2,7 @@
 
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import AssessmentIcon from "@mui/icons-material/Assessment";
-// import GroupIcon from "@mui/icons-material/Group"; // oculto até JWT HS256/ES256 estar validado
+import GroupIcon from "@mui/icons-material/Group";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
@@ -117,14 +117,12 @@ export function DashboardFrame({
         <MuiList disablePadding>
           <NavItem href="/pedidos" label="Pedidos" icon={<LocalShippingIcon fontSize="small" />} activePathPrefix="/pedidos" />
           <NavItem href="/relatorios" label="Relatórios" icon={<AssessmentIcon fontSize="small" />} activePathPrefix="/relatorios" />
-          {/* Oculto temporariamente enquanto o fluxo JWT (HS256/ES256) não está fechado.
-              Re-activar adicionando novamente o NavItem abaixo:
-              <NavItem
-                href="/admin/gestao-utilizadores"
-                label="Utilizadores"
-                icon={<GroupIcon fontSize="small" />}
-                activePathPrefix="/admin"
-              /> */}
+          <NavItem
+            href="/admin/gestao-utilizadores"
+            label="Utilizadores"
+            icon={<GroupIcon fontSize="small" />}
+            activePathPrefix="/admin"
+          />
         </MuiList>
       </Drawer>
 
