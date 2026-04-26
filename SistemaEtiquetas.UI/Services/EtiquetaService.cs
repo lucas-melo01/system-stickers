@@ -13,7 +13,6 @@ namespace SistemaEtiquetas.UI.Services
             var cor = item.Cor ?? "N/A";
             var tamanho = item.Tamanho ?? "N/A";
             var cpf = pedido.ClienteCpf ?? "";
-            var sku = item.SKU ?? "N/A";
 
             // Limitar comprimento dos campos para caber na etiqueta
             var linha1Nome = nome.Length > 30 ? nome.Substring(0, 30) : nome;
@@ -21,7 +20,6 @@ namespace SistemaEtiquetas.UI.Services
             var linha3Cor = cor.Length > 20 ? cor.Substring(0, 20) : cor;
             var linha4Tam = tamanho.Length > 10 ? tamanho.Substring(0, 10) : tamanho;
             var linha5Cpf = cpf.Length > 20 ? cpf.Substring(0, 20) : cpf;
-            var linha6Sku = sku.Length > 20 ? sku.Substring(0, 20) : sku;
 
             var zpl = $@"^XA
 ^PW480
@@ -37,8 +35,6 @@ namespace SistemaEtiquetas.UI.Services
 ^FO250,135^FDTAM: {linha4Tam}^FS
 
 ^FO20,175^FDCPF: {linha5Cpf}^FS
-
-^FO20,215^FDSKU: {linha6Sku}^FS
 
 ^XZ";
 
