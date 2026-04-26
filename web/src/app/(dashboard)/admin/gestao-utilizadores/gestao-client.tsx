@@ -17,11 +17,10 @@ import MenuItem from "@mui/material/MenuItem";
 import Alert from "@mui/material/Alert";
 import { BRAND_NAME } from "@/lib/brand";
 import { isAdminPerfil } from "@/lib/is-admin-perfil";
+import type { UsuarioLista } from "@/lib/normalize-usuario";
 
-type U = { id: string; email: string; nome: string | null; perfil: string | number; ativo: boolean; criadoEm: string };
-
-export function GestaoUtilizadoresClient({ initial }: { initial: U[] }) {
-  const [list, setList] = useState(initial);
+export function GestaoUtilizadoresClient({ initial }: { initial: UsuarioLista[] }) {
+  const [list, setList] = useState<UsuarioLista[]>(initial);
   const [msg, setMsg] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +46,7 @@ export function GestaoUtilizadoresClient({ initial }: { initial: U[] }) {
       });
       const text = await r.text();
       if (!r.ok) throw new Error(text || r.statusText);
-      const u = JSON.parse(text) as U;
+      const u = JSON.parse(text) as UsuarioLista;
       setList((prev) => prev.map((x) => (x.id === id ? { ...x, ...u } : x)));
       setMsg("Guardado");
     } catch (e) {

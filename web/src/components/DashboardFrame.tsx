@@ -68,9 +68,12 @@ function NavItem({
 
 export function DashboardFrame({
   email,
+  isAdmin = false,
   children,
 }: {
   email?: string;
+  /** Mostra o item "Utilizadores" no menu (só para administradores na API). */
+  isAdmin?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -117,12 +120,14 @@ export function DashboardFrame({
         <MuiList disablePadding>
           <NavItem href="/pedidos" label="Pedidos" icon={<LocalShippingIcon fontSize="small" />} activePathPrefix="/pedidos" />
           <NavItem href="/relatorios" label="Relatórios" icon={<AssessmentIcon fontSize="small" />} activePathPrefix="/relatorios" />
-          <NavItem
-            href="/admin/gestao-utilizadores"
-            label="Utilizadores"
-            icon={<GroupIcon fontSize="small" />}
-            activePathPrefix="/admin"
-          />
+          {isAdmin && (
+            <NavItem
+              href="/admin/gestao-utilizadores"
+              label="Utilizadores"
+              icon={<GroupIcon fontSize="small" />}
+              activePathPrefix="/admin"
+            />
+          )}
         </MuiList>
       </Drawer>
 
