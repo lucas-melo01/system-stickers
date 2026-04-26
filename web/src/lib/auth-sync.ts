@@ -13,6 +13,39 @@ export type PerfilAtual = {
 
 const base = process.env.NEXT_PUBLIC_API_URL ?? "";
 
+/** Alinha com a API .NET: PascalCase (Id, Perfil) e `Perfil` como enum (0/1) ou "Admin"/"Operador". */
+export function normalizePerfilAtualResponse(raw: unknown): PerfilAtual | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const id = String(o.id ?? o.Id ?? "");
+  const email = String(o.email ?? o.Email ?? "");
+  if (!id && !email) return null;
+  const perfilBruto = o.perfil ?? o.Perfil;
+  let perfil: string | number;
+  if (typeof perfilBruto === "number" && !Number.isNaN(perfilBruto)) {
+    perfil = perfilBruto;
+  } else if (typeof perfilBruto === "string") {
+    const t = perfilBruto.trim();
+    const n = Number(t);
+    if (t !== "" && !Number.isNaN(n) && String(n) === t) {
+      perfil = n;
+    } else {
+      perfil = t;
+    }
+  } else {
+    perfil = "Operador";
+  }
+  const ativoV = o.ativo ?? o.Ativo;
+  const ativo = typeof ativoV === "boolean" ? ativoV : ativoV == null ? undefined : Boolean(ativoV);
+  return {
+    id,
+    email,
+    nome: (o.nome ?? o.Nome ?? null) as string | null,
+    perfil,
+    ativo,
+  };
+}
+
 export async function fetchPerfilAtual(accessToken: string): Promise<PerfilAtual | null> {
   if (!base) return null;
 
@@ -31,7 +64,8 @@ export async function fetchPerfilAtual(accessToken: string): Promise<PerfilAtual
       console.error("fetchPerfilAtual: resposta", r.status, await r.text().catch(() => ""));
       return null;
     }
-    return (await r.json()) as PerfilAtual;
+    const json: unknown = await r.json();
+    return normalizePerfilAtualResponse(json);
   } catch (e) {
     console.error("fetchPerfilAtual", e);
     return null;
