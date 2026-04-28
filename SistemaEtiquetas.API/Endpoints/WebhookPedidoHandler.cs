@@ -20,7 +20,11 @@ public static class WebhookPedidoHandler
         if (pedidoDto?.situacao?.codigo != "pedido_pago")
             return Results.Ok("Pedido não processado: status diferente de 'pedido_pago'");
 
-        if (await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoDto.id.ToString()))
+        var pedidoExternoId = !string.IsNullOrWhiteSpace(pedidoDto.numero)
+            ? pedidoDto.numero.Trim()
+            : pedidoDto.id.ToString();
+
+        if (await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoExternoId))
             return Results.Ok("Pedido já processado");
 
         // A marketplace tipicamente envia data_criacao sem indicador de zona
@@ -33,7 +37,7 @@ public static class WebhookPedidoHandler
         var formaPagamento = pedidoDto.pagamentos?.FirstOrDefault()?.forma_pagamento?.nome ?? "N/A";
         var pedido = new Pedido
         {
-            PedidoExternoId = pedidoDto.id.ToString(),
+            PedidoExternoId = pedidoExternoId,
             NomeCliente = pedidoDto.cliente?.nome,
             DataPedido = dataPedido,
             ClienteCpf = pedidoDto.cliente?.cpf,
