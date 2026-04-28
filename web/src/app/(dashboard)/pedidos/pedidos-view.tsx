@@ -162,11 +162,11 @@ export function PedidosView({
                 <Checkbox
                   size="small"
                   color="primary"
-                  disabled={pendentesNaPagina.length === 0}
+                  disabled={idsNaPagina.length === 0}
                   checked={todosSelecionados}
                   indeterminate={algumSelecionado}
                   onChange={toggleTodos}
-                  slotProps={{ input: { "aria-label": "Seleccionar todos os pendentes da página" } }}
+                  slotProps={{ input: { "aria-label": "Seleccionar todos os itens da página" } }}
                 />
               </TableCell>
               <TableCell>Data</TableCell>
