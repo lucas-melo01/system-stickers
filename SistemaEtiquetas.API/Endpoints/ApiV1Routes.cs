@@ -294,13 +294,14 @@ public static class ApiV1Routes
             var pedidos = await db.Pedidos.AsNoTracking()
                 .Include(p => p.Itens)
                 .Where(p => p.DataPedido >= i0 && p.DataPedido < f0)
-                .OrderByDescending(p => p.DataPedido)
+                .OrderBy(p => p.DataPedido)
+                .ThenBy(p => p.Id)
                 .ToListAsync();
 
             var linhas = new List<object>();
             foreach (var p in pedidos)
             {
-                foreach (var it in p.Itens)
+                foreach (var it in p.Itens.OrderBy(x => x.Id))
                 {
                     linhas.Add(new
                     {
@@ -331,7 +332,8 @@ public static class ApiV1Routes
             var pedidos = await db.Pedidos.AsNoTracking()
                 .Include(p => p.Itens)
                 .Where(p => p.DataPedido >= i0 && p.DataPedido < f0)
-                .OrderByDescending(p => p.DataPedido)
+                .OrderBy(p => p.DataPedido)
+                .ThenBy(p => p.Id)
                 .ToListAsync();
 
             if (!pedidos.Any())

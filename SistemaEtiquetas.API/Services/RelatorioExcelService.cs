@@ -32,7 +32,7 @@ public static class RelatorioExcelService
 
         foreach (var pedido in pedidos)
         {
-            foreach (var item in pedido.Itens)
+            foreach (var item in pedido.Itens.OrderBy(x => x.Id))
             {
                 worksheet.Cells[row, 1].Value = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy HH:mm");
                 worksheet.Cells[row, 2].Value = item.SKU ?? "N/A";

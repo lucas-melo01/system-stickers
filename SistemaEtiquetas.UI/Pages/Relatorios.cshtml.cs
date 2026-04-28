@@ -41,13 +41,14 @@ public class RelatoriosModel : PageModel
             var pedidos = await _db.Pedidos
                 .Include(p => p.Itens)
                 .Where(p => p.DataPedido >= dataInicio && p.DataPedido < dataFim)
-                .OrderByDescending(p => p.DataPedido)
+                .OrderBy(p => p.DataPedido)
+                .ThenBy(p => p.Id)
                 .ToListAsync();
 
             // Montar lista de vendas
             foreach (var pedido in pedidos)
             {
-                foreach (var item in pedido.Itens)
+                foreach (var item in pedido.Itens.OrderBy(x => x.Id))
                 {
                     Vendas.Add(new VendaRelatario
                     {
@@ -83,7 +84,8 @@ public class RelatoriosModel : PageModel
             var pedidos = await _db.Pedidos
                 .Include(p => p.Itens)
                 .Where(p => p.DataPedido >= dataInicioKind && p.DataPedido < dataFimKind)
-                .OrderByDescending(p => p.DataPedido)
+                .OrderBy(p => p.DataPedido)
+                .ThenBy(p => p.Id)
                 .ToListAsync();
 
             if (!pedidos.Any())
@@ -119,7 +121,7 @@ public class RelatoriosModel : PageModel
 
             foreach (var pedido in pedidos)
             {
-                foreach (var item in pedido.Itens)
+                foreach (var item in pedido.Itens.OrderBy(x => x.Id))
                 {
                     worksheet.Cells[row, 1].Value = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy HH:mm");
                     worksheet.Cells[row, 2].Value = item.SKU ?? "N/A";
