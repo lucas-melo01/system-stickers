@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.Endpoints;
 using SistemaEtiquetas.API.Extensions;
+using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,10 @@ builder.Services.AddSistemaEtiquetasCors(builder.Configuration);
 builder.Services.AddSistemaEtiquetasAuth(builder.Configuration);
 
 builder.Services.AddScoped<SistemaEtiquetas.API.Services.ImpressaoService>();
+
+builder.Services.Configure<LojaIntegradaApiOptions>(
+    builder.Configuration.GetSection("LojaIntegrada"));
+builder.Services.AddHttpClient<LojaIntegradaProdutoApi>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -50,20 +55,20 @@ var reimprimir = app.MapPost("/reimprimir/{itemId:int}", LegacyReimprimir.Retorn
 if (authConfigured)
     reimprimir.RequireAuthorization();
 
-app.MapPost("/webhook/pedido/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg, ILoggerFactory lf) =>
+app.MapPost("/webhook/pedido/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo) =>
 {
     if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
         return Results.Unauthorized();
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
-    return await WebhookPedidoHandler.Processar(payload, "Resume Modas", db, lf.CreateLogger("webhook"));
+    return await WebhookPedidoHandler.Processar(payload, "Resume Modas", db, catalogo);
 });
 
-app.MapPost("/webhook/pedido/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg, ILoggerFactory lf) =>
+app.MapPost("/webhook/pedido/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo) =>
 {
     if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
         return Results.Unauthorized();
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
-    return await WebhookPedidoHandler.Processar(payload, "DonnaKora", db, lf.CreateLogger("webhook"));
+    return await WebhookPedidoHandler.Processar(payload, "DonnaKora", db, catalogo);
 });
 
 app.MapGet("/", () => "API Sistema Etiquetas");

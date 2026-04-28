@@ -57,6 +57,12 @@ namespace SistemaEtiquetas.API.DTO
 
     public class ItemDto
     {
+        /// <summary>Id da linha do pedido na plataforma.</summary>
+        public long id { get; set; }
+
+        [JsonPropertyName("produto_id")]
+        public long produto_id { get; set; }
+
         public string nome { get; set; }
         public string sku { get; set; }
         public int quantidade { get; set; }

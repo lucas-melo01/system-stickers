@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.DTO;
+using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
@@ -13,7 +14,7 @@ public static class WebhookPedidoHandler
         string payload,
         string vendedor,
         AppDbContext db,
-        ILogger? logger = null)
+        LojaIntegradaProdutoApi catalogoProduto)
     {
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var pedidoDto = JsonSerializer.Deserialize<WebhookPedidoDto>(payload, options);
@@ -53,7 +54,18 @@ public static class WebhookPedidoHandler
         // distinção entre primeira linha e cópias.
         foreach (var item in pedidoDto.itens)
         {
-            var (sku, cor, tamanho) = ParsearSku(item.sku);
+            var (skuLegado, cor, tamanho) = ParsearSku(item.sku);
+            string sku;
+            if (item.produto_id > 0)
+            {
+                var mpn = await catalogoProduto.ObterMpnAsync(item.produto_id, vendedor);
+                sku = string.IsNullOrWhiteSpace(mpn) ? string.Empty : mpn.Trim();
+            }
+            else
+            {
+                sku = skuLegado;
+            }
+
             var n = item.quantidade > 0 ? item.quantidade : 1;
             for (var i = 0; i < n; i++)
             {
