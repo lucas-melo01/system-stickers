@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 type Venda = {
   dataPedido: string;
-  sku: string;
+  codigoFornecedor: string;
   vendedor: string;
   peca: string;
   cliente: string;

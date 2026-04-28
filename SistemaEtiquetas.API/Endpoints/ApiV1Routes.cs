@@ -109,6 +109,7 @@ public static class ApiV1Routes
                         NomeCliente = p.NomeCliente ?? "",
                         ClienteCpf = p.ClienteCpf,
                         Produto = it.Produto,
+                        CodigoFornecedor = it.SKU ?? "",
                         Cor = it.Cor,
                         Tamanho = it.Tamanho,
                         Quantidade = it.Quantidade,
@@ -306,7 +307,7 @@ public static class ApiV1Routes
                     linhas.Add(new
                     {
                         dataPedido = p.DataPedido,
-                        sku = it.SKU ?? "N/A",
+                        codigoFornecedor = string.IsNullOrWhiteSpace(it.SKU) ? "N/A" : it.SKU,
                         vendedor = p.Vendedor ?? "Manual",
                         peca = $"{it.Produto} - {it.Cor ?? "N/A"} - {it.Tamanho ?? "N/A"}",
                         cliente = p.NomeCliente,

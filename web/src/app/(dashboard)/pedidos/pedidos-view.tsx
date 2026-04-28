@@ -28,6 +28,7 @@ type Row = {
   nomeCliente: string;
   clienteCpf: string | null;
   produto: string;
+  codigoFornecedor: string;
   cor: string | null;
   tamanho: string | null;
   quantidade: number;
@@ -172,6 +173,7 @@ export function PedidosView({
               <TableCell>Data</TableCell>
               <TableCell>Pedido</TableCell>
               <TableCell>Cliente</TableCell>
+              <TableCell>Código fornecedor</TableCell>
               <TableCell>Item</TableCell>
               <TableCell>Status</TableCell>
               <TableCell width={200} align="right">
@@ -182,7 +184,7 @@ export function PedidosView({
           <TableBody>
             {result.items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} sx={{ color: "text.secondary" }}>
+                <TableCell colSpan={8} sx={{ color: "text.secondary" }}>
                   Nenhum registro
                 </TableCell>
               </TableRow>
@@ -214,6 +216,9 @@ export function PedidosView({
                   <TableCell>{r.pedidoExternoId}</TableCell>
                   <TableCell sx={{ maxWidth: 200 }} title={r.nomeCliente}>
                     {r.nomeCliente} {r.clienteCpf}
+                  </TableCell>
+                  <TableCell sx={{ maxWidth: 140, whiteSpace: "nowrap" }} title={r.codigoFornecedor || undefined}>
+                    {r.codigoFornecedor || "—"}
                   </TableCell>
                   <TableCell sx={{ maxWidth: 220 }} title={`${r.produto} — ${r.cor} — ${r.tamanho}`}>
                     {r.produto} — {r.cor ?? "—"} — {r.tamanho ?? "—"}

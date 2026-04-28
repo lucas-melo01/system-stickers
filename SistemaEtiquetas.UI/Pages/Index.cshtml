@@ -268,7 +268,7 @@
                             <thead>
                                 <tr class="table-secondary">
                                     <th>Produto</th>
-                                    <th>SKU</th>
+                                    <th>Código fornecedor</th>
                                     <th>Cor</th>
                                     <th>Tamanho</th>
                                     <th width="80">Qtd</th>
@@ -280,7 +280,7 @@
                             <tbody id="itensTableBody">
                                 <tr class="item-row">
                                     <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Produto" placeholder="Ex: Camiseta" required></td>
-                                    <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].SKU" placeholder="Ex: SKU001"></td>
+                                    <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].SKU" placeholder="Código do fornecedor"></td>
                                     <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Cor" placeholder="Ex: Azul"></td>
                                     <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Tamanho" placeholder="Ex: M"></td>
                                     <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[0].Quantidade" value="1" min="1" required></td>
@@ -496,7 +496,7 @@
             row.className = 'item-row';
             row.innerHTML = `
                 <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Produto" placeholder="Ex: Camiseta" required></td>
-                <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].SKU" placeholder="Ex: SKU001"></td>
+                <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].SKU" placeholder="Código do fornecedor"></td>
                 <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Cor" placeholder="Ex: Azul"></td>
                 <td><input type="text" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Tamanho" placeholder="Ex: M"></td>
                 <td><input type="number" class="form-control form-control-sm" name="AddPedidoModel.Itens[${itemCount}].Quantidade" value="1" min="1" required></td>

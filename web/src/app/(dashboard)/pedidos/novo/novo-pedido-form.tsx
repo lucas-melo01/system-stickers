@@ -229,7 +229,7 @@ export function NovoPedidoForm() {
             <TableHead>
               <TableRow sx={{ bgcolor: "grey.100" }}>
                 <TableCell>Produto *</TableCell>
-                <TableCell>SKU</TableCell>
+                <TableCell>Código fornecedor</TableCell>
                 <TableCell>Cor</TableCell>
                 <TableCell>Tam.</TableCell>
                 <TableCell width={90}>Qtd</TableCell>

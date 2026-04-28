@@ -16,7 +16,7 @@ import { formatDataHoraBR } from "@/lib/datetime";
 
 type Venda = {
   dataPedido: string;
-  sku: string;
+  codigoFornecedor: string;
   vendedor: string;
   peca: string;
   cliente: string;
@@ -78,7 +78,7 @@ export function RelatoriosView({
           <TableHead>
             <TableRow sx={{ bgcolor: "grey.100" }}>
               <TableCell>Data</TableCell>
-              <TableCell>SKU</TableCell>
+              <TableCell>Código fornecedor</TableCell>
               <TableCell>Vendedor</TableCell>
               <TableCell>Peça</TableCell>
               <TableCell>Cliente</TableCell>
@@ -88,7 +88,7 @@ export function RelatoriosView({
             {rows.map((r, i) => (
               <TableRow key={i} hover>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDataHoraBR(r.dataPedido)}</TableCell>
-                <TableCell>{r.sku}</TableCell>
+                <TableCell>{r.codigoFornecedor}</TableCell>
                 <TableCell>{r.vendedor}</TableCell>
                 <TableCell sx={{ maxWidth: 240 }} title={r.peca}>
                   {r.peca}

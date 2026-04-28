@@ -41,6 +41,8 @@ public class PedidoItemRowDto
     public string NomeCliente { get; set; } = string.Empty;
     public string? ClienteCpf { get; set; }
     public string Produto { get; set; } = string.Empty;
+    /// <summary>Coluna <c>SKU</c> na base (código do fornecedor / MPN).</summary>
+    public string CodigoFornecedor { get; set; } = string.Empty;
     public string? Cor { get; set; }
     public string? Tamanho { get; set; }
     public int Quantidade { get; set; }

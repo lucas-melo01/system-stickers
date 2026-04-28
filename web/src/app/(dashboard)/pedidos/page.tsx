@@ -16,6 +16,7 @@ type Row = {
   nomeCliente: string;
   clienteCpf: string | null;
   produto: string;
+  codigoFornecedor: string;
   cor: string | null;
   tamanho: string | null;
   quantidade: number;
