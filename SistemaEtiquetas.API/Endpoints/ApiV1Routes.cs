@@ -426,16 +426,14 @@ public static class ApiV1Routes
 
     // Aplica os mesmos filtros usados em /pedidos sobre a lista de itens
     // pendentes. Quando "ids" vem preenchido, ignora q/data e devolve só
-    // os PedidoItem.Id contidos no CSV — isto suporta o "imprimir
-    // selecionados" do front-end.
+    // os PedidoItem.Id contidos no CSV — inclui já impressos para permitir
+    // reimpressão por selecção. Sem "ids", mantém só !Impresso.
     private static IQueryable<PedidoItem> AplicarFiltrosPendentes(
         IQueryable<PedidoItem> source,
         string? q,
         DateTime? data,
         string? ids)
     {
-        var query = source.Where(i => !i.Impresso);
-
         if (!string.IsNullOrWhiteSpace(ids))
         {
             var idList = ids
@@ -445,9 +443,11 @@ public static class ApiV1Routes
                 .Distinct()
                 .ToList();
             if (idList.Count == 0)
-                return query.Where(_ => false);
-            return query.Where(i => idList.Contains(i.Id));
+                return source.Where(_ => false);
+            return source.Where(i => idList.Contains(i.Id));
         }
+
+        var query = source.Where(i => !i.Impresso);
 
         if (!string.IsNullOrWhiteSpace(q))
         {

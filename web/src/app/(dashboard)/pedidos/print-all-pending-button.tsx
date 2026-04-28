@@ -75,7 +75,7 @@ export function PrintAllPendingButton({
       if (!Array.isArray(lista) || lista.length === 0) {
         setMsg(
           isSelecao
-            ? "Nenhum item pendente entre os selecionados."
+            ? "Nenhum item encontrado entre os selecionados."
             : temFiltro
               ? "Não há etiquetas pendentes para o filtro actual."
               : "Não há etiquetas pendentes."

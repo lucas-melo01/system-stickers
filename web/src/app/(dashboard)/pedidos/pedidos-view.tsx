@@ -61,9 +61,9 @@ export function PedidosView({
     return sp.toString();
   };
 
-  // IDs pendentes da página actual — únicos elegíveis para selecção em massa.
-  const pendentesNaPagina = useMemo(
-    () => result.items.filter((r) => !r.impresso).map((r) => r.pedidoItemId),
+  // IDs da página actual — seleccionáveis para impressão em massa (inclui reimpressão).
+  const idsNaPagina = useMemo(
+    () => result.items.map((r) => r.pedidoItemId),
     [result.items]
   );
 
@@ -80,18 +80,17 @@ export function PedidosView({
   }, [idsResposta]);
 
   const todosSelecionados =
-    pendentesNaPagina.length > 0 &&
-    pendentesNaPagina.every((id) => selecionados.has(id));
+    idsNaPagina.length > 0 && idsNaPagina.every((id) => selecionados.has(id));
   const algumSelecionado =
-    pendentesNaPagina.some((id) => selecionados.has(id)) && !todosSelecionados;
+    idsNaPagina.some((id) => selecionados.has(id)) && !todosSelecionados;
 
   function toggleTodos() {
     setSelecionados((prev) => {
       const next = new Set(prev);
       if (todosSelecionados) {
-        for (const id of pendentesNaPagina) next.delete(id);
+        for (const id of idsNaPagina) next.delete(id);
       } else {
-        for (const id of pendentesNaPagina) next.add(id);
+        for (const id of idsNaPagina) next.add(id);
       }
       return next;
     });
@@ -196,19 +195,17 @@ export function PedidosView({
                   hover
                   selected={checked}
                   onClick={(e) => {
-                    if (r.impresso) return;
                     const target = e.target as HTMLElement;
                     if (target.closest("button, a, input")) return;
                     toggleUm(r.pedidoItemId);
                   }}
-                  sx={{ cursor: r.impresso ? "default" : "pointer" }}
+                  sx={{ cursor: "pointer" }}
                 >
                   <TableCell padding="checkbox">
                     <Checkbox
                       size="small"
                       color="primary"
                       checked={checked}
-                      disabled={r.impresso}
                       onChange={() => toggleUm(r.pedidoItemId)}
                       slotProps={{ input: { "aria-label": `Seleccionar item ${r.pedidoItemId}` } }}
                     />
