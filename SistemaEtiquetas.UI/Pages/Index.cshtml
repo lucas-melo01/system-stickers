@@ -71,7 +71,7 @@
         @foreach (var item in Model.PedidoItens)
         {
             <tr>
-                <td>@TimeZoneBrasil.DeUtcParaBrasilia(item.DataPedido).ToString("dd/MM/yyyy")</td>
+                <td>@TimeZoneBrasil.DeUtcParaBrasilia(item.DataPedido).ToString("dd/MM/yyyy HH:mm")</td>
                 <td>@item.PedidoExternoId</td>
                 <td>@item.NomeCliente - @item.ClienteCpf</td>
                 <td>@item.Produto - @(item.Cor ?? "N/A") - @(item.Tamanho ?? "N/A")</td>

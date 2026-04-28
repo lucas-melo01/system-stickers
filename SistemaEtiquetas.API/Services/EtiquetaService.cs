@@ -19,7 +19,7 @@ namespace SistemaEtiquetas.API.Services
         // ^LH0,0 e ^LS0 são seguros por job — apenas fixam a origem e o shift.
         public string GerarZpl(Pedido pedido, PedidoItem item)
         {
-            var data = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy");
+            var data = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy HH:mm");
             var nome = pedido.NomeCliente ?? "";
             var modelo = item.Produto ?? "";
             var cor = item.Cor ?? "N/A";

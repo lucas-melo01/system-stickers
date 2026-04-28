@@ -7,7 +7,7 @@ namespace SistemaEtiquetas.UI.Services
     {
         public string GerarZpl(Pedido pedido, PedidoItem item)
         {
-            var data = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy");
+            var data = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy HH:mm");
             var nome = pedido.NomeCliente ?? "";
             var modelo = item.Produto ?? "";
             var cor = item.Cor ?? "N/A";

@@ -34,7 +34,7 @@ public static class RelatorioExcelService
         {
             foreach (var item in pedido.Itens)
             {
-                worksheet.Cells[row, 1].Value = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy");
+                worksheet.Cells[row, 1].Value = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy HH:mm");
                 worksheet.Cells[row, 2].Value = item.SKU ?? "N/A";
                 worksheet.Cells[row, 3].Value = pedido.Vendedor ?? "Manual";
                 worksheet.Cells[row, 4].Value = $"{item.Produto} - {item.Cor ?? "N/A"} - {item.Tamanho ?? "N/A"}";
