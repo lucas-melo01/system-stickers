@@ -50,7 +50,7 @@ export default async function PedidosPage({
   if (q) qs.set("q", q);
   if (data) qs.set("data", data);
   qs.set("page", String(page));
-  qs.set("pageSize", "15");
+  qs.set("pageSize", "50");
   const path = `/api/pedidos?${qs.toString()}`;
 
   let result: Paged;

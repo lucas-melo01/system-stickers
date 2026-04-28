@@ -68,10 +68,10 @@ public static class ApiV1Routes
         g.MapPost("/auth/sync", AuthSyncHandler);
         g.MapGet("/auth/sync", AuthSyncHandler);
 
-        g.MapGet("/pedidos", async (AppDbContext db, string? q, DateTime? data, int page = 1, int pageSize = 15) =>
+        g.MapGet("/pedidos", async (AppDbContext db, string? q, DateTime? data, int page = 1, int pageSize = 50) =>
         {
             if (page < 1) page = 1;
-            if (pageSize is < 1 or > 100) pageSize = 15;
+            if (pageSize is < 1 or > 100) pageSize = 50;
 
             IQueryable<Pedido> query = db.Pedidos.AsNoTracking().Include(p => p.Itens);
 
