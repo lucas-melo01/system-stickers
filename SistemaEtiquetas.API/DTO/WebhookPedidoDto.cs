@@ -45,7 +45,7 @@ namespace SistemaEtiquetas.API.DTO
         public List<ItemDto> itens { get; set; }
         public List<EnvioDto> envios { get; set; }
         public List<PagamentoDto> pagamentos { get; set; }
-        public decimal valor_envio { get; set; }
+        public decimal? valor_envio { get; set; }
         public SituacaoDto situacao { get; set; }
     }
 
@@ -70,7 +70,7 @@ namespace SistemaEtiquetas.API.DTO
 
     public class EnvioDto
     {
-        public decimal valor { get; set; }
+        public decimal? valor { get; set; }
         public FormaEnvioDto forma_envio { get; set; }
     }
 

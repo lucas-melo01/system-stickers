@@ -34,7 +34,9 @@ public static class WebhookPedidoHandler
         // como horário de Brasília. Se vier com 'Z' ou offset, respeita-se.
         var dataPedido = TimeZoneBrasil.ParaUtcConsiderandoBrasilia(pedidoDto.data_criacao);
         var tipoEnvio = pedidoDto.envios?.FirstOrDefault()?.forma_envio?.nome ?? "N/A";
-        var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor ?? pedidoDto.valor_envio;
+        var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor
+            ?? pedidoDto.valor_envio
+            ?? 0m;
         var formaPagamento = pedidoDto.pagamentos?.FirstOrDefault()?.forma_pagamento?.nome ?? "N/A";
         var pedido = new Pedido
         {
