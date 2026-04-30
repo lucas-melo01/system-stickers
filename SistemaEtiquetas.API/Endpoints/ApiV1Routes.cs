@@ -68,14 +68,10 @@ public static class ApiV1Routes
         g.MapPost("/auth/sync", AuthSyncHandler);
         g.MapGet("/auth/sync", AuthSyncHandler);
 
-        g.MapGet("/pedidos", async (AppDbContext db, string? q, DateTime? data, string? status, int page = 1, int pageSize = 50) =>
+        g.MapGet("/pedidos", async (AppDbContext db, string? q, DateTime? data, int page = 1, int pageSize = 50) =>
         {
             if (page < 1) page = 1;
             if (pageSize is < 1 or > 100) pageSize = 50;
-
-            var filtroStatus = status?.Trim().ToLowerInvariant();
-            var soPendentes = filtroStatus == "pendente";
-            var soImpressos = filtroStatus == "impresso";
 
             IQueryable<Pedido> query = db.Pedidos.AsNoTracking().Include(p => p.Itens);
 
@@ -104,11 +100,6 @@ public static class ApiV1Routes
             {
                 foreach (var it in p.Itens)
                 {
-                    if (soPendentes && it.Impresso)
-                        continue;
-                    if (soImpressos && !it.Impresso)
-                        continue;
-
                     rows.Add(new PedidoItemRowDto
                     {
                         PedidoId = p.Id,

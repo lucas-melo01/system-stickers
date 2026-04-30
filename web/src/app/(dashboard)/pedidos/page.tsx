@@ -39,9 +39,6 @@ export default async function PedidosPage({
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : undefined;
   const data = typeof sp.data === "string" ? sp.data : undefined;
-  const statusRaw = typeof sp.status === "string" ? sp.status : undefined;
-  const statusEtiqueta =
-    statusRaw === "pendente" || statusRaw === "impresso" ? statusRaw : undefined;
   const page = typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
   const supabase = await createClient();
   if (!supabase) redirect("/login");
@@ -53,7 +50,6 @@ export default async function PedidosPage({
   const qs = new URLSearchParams();
   if (q) qs.set("q", q);
   if (data) qs.set("data", data);
-  if (statusEtiqueta) qs.set("status", statusEtiqueta);
   qs.set("page", String(page));
   qs.set("pageSize", "50");
   const path = `/api/pedidos?${qs.toString()}`;
@@ -79,7 +75,6 @@ export default async function PedidosPage({
       result={result}
       q={q}
       data={data}
-      statusEtiqueta={statusEtiqueta}
       page={page}
     />
   );
