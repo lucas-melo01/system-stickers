@@ -43,21 +43,26 @@ type Paged = {
   totalPages: number;
 };
 
+type StatusEtiquetaFiltro = "pendente" | "impresso" | undefined;
+
 export function PedidosView({
   result,
   q,
   data,
+  statusEtiqueta,
   page,
 }: {
   result: Paged;
   q?: string;
   data?: string;
+  statusEtiqueta?: StatusEtiquetaFiltro;
   page: number;
 }) {
   const qs = (p: number) => {
     const sp = new URLSearchParams();
     if (q) sp.set("q", q);
     if (data) sp.set("data", data);
+    if (statusEtiqueta) sp.set("status", statusEtiqueta);
     sp.set("page", String(p));
     return sp.toString();
   };
@@ -133,16 +138,31 @@ export function PedidosView({
             selectedIds={idsSelecionados}
             onPrinted={() => setSelecionados(new Set())}
           />
-          <PrintAllPendingButton q={q} data={data} />
+          {statusEtiqueta !== "impresso" && <PrintAllPendingButton q={q} data={data} />}
         </Box>
       </Box>
       <Paper
         variant="outlined"
         component="form"
+        method="get"
+        action="/pedidos"
         sx={{ p: 2, mb: 3, display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-end" }}
       >
         <TextField name="q" label="Busca" size="small" defaultValue={q} placeholder="ID, nome, CPF" />
         <TextField name="data" label="Data" type="date" size="small" defaultValue={data} slotProps={{ inputLabel: { shrink: true } }} />
+        <TextField
+          name="status"
+          label="Status da etiqueta"
+          select
+          size="small"
+          defaultValue={statusEtiqueta ?? ""}
+          sx={{ minWidth: 180 }}
+          slotProps={{ inputLabel: { shrink: true } }}
+        >
+          <option value="">Todos</option>
+          <option value="pendente">Pendentes</option>
+          <option value="impresso">Impressos</option>
+        </TextField>
         <Button type="submit" variant="contained" color="primary">
           Filtrar
         </Button>
