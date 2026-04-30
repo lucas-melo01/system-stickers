@@ -20,12 +20,14 @@ namespace SistemaEtiquetas.API.Services
         public string GerarZpl(Pedido pedido, PedidoItem item)
         {
             var data = TimeZoneBrasil.DeUtcParaBrasilia(pedido.DataPedido).ToString("dd/MM/yyyy HH:mm");
-            var nome = pedido.NomeCliente ?? "";
-            var modelo = item.Produto ?? "";
-            var cor = item.Cor ?? "N/A";
-            var tamanho = item.Tamanho ?? "N/A";
-            var cpf = pedido.ClienteCpf ?? "";
-            var codForn = item.SKU ?? "";
+            var nome = TextoEtiqueta.RemoverAcentos(pedido.NomeCliente);
+            var modelo = TextoEtiqueta.RemoverAcentos(item.Produto);
+            var cor = TextoEtiqueta.RemoverAcentos(item.Cor);
+            cor = string.IsNullOrWhiteSpace(cor) ? "N/A" : cor;
+            var tamanho = TextoEtiqueta.RemoverAcentos(item.Tamanho);
+            tamanho = string.IsNullOrWhiteSpace(tamanho) ? "N/A" : tamanho;
+            var cpf = TextoEtiqueta.RemoverAcentos(pedido.ClienteCpf);
+            var codForn = TextoEtiqueta.RemoverAcentos(item.SKU);
 
             var linha1Nome   = nome.Length    > 30 ? nome.Substring(0, 30)    : nome;
             var linhaCodForn = codForn.Length > 28 ? codForn.Substring(0, 28) : codForn;
