@@ -16,6 +16,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { PedidoRowActions } from "./row-actions";
 import { PrintAllPendingButton } from "./print-all-pending-button";
+import { ManualPedidoActions } from "./manual-pedido-actions";
 import { PaginationBar } from "@/components/PaginationBar";
 import { QzPrinterStatus } from "@/components/QzPrinterStatus";
 import { formatDataHoraBR } from "@/lib/datetime";
@@ -25,8 +26,12 @@ type Row = {
   pedidoItemId: number;
   dataPedido: string;
   pedidoExternoId: string;
+  ehPedidoManual: boolean;
   nomeCliente: string;
   clienteCpf: string | null;
+  tipoEnvio: string | null;
+  formaPagamento: string | null;
+  valorFrete: number;
   produto: string;
   codigoFornecedor: string;
   cor: string | null;
@@ -108,6 +113,21 @@ export function PedidosView({
 
   const idsSelecionados = useMemo(() => Array.from(selecionados), [selecionados]);
 
+  /** Primeira linha manual de cada pedido na página: acções de cabeçalho e exclusão. */
+  const mostrarAcoesDoPedido = useMemo(() => {
+    const visto = new Set<number>();
+    const map = new Map<number, boolean>();
+    for (const r of result.items) {
+      if (!r.ehPedidoManual) continue;
+      if (visto.has(r.pedidoId)) map.set(r.pedidoItemId, false);
+      else {
+        visto.add(r.pedidoId);
+        map.set(r.pedidoItemId, true);
+      }
+    }
+    return map;
+  }, [result.items]);
+
   return (
     <Box>
       <QzPrinterStatus />
@@ -176,7 +196,7 @@ export function PedidosView({
               <TableCell>Código fornecedor</TableCell>
               <TableCell>Item</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell width={200} align="right">
+              <TableCell width={280} align="right">
                 Ações
               </TableCell>
             </TableRow>
@@ -235,7 +255,29 @@ export function PedidosView({
                     )}
                   </TableCell>
                   <TableCell align="right">
-                    <PedidoRowActions itemId={r.pedidoItemId} />
+                    <Box sx={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: 0.25 }}>
+                      {r.ehPedidoManual && (
+                        <ManualPedidoActions
+                          row={{
+                            pedidoId: r.pedidoId,
+                            pedidoItemId: r.pedidoItemId,
+                            dataPedido: r.dataPedido,
+                            pedidoExternoId: r.pedidoExternoId,
+                            nomeCliente: r.nomeCliente,
+                            clienteCpf: r.clienteCpf,
+                            tipoEnvio: r.tipoEnvio,
+                            formaPagamento: r.formaPagamento,
+                            valorFrete: r.valorFrete,
+                            produto: r.produto,
+                            cor: r.cor,
+                            tamanho: r.tamanho,
+                            quantidade: r.quantidade,
+                          }}
+                          showPedidoWideActions={Boolean(mostrarAcoesDoPedido.get(r.pedidoItemId))}
+                        />
+                      )}
+                      <PedidoRowActions itemId={r.pedidoItemId} />
+                    </Box>
                   </TableCell>
                 </TableRow>
               );

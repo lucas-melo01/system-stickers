@@ -106,8 +106,12 @@ public static class ApiV1Routes
                         PedidoItemId = it.Id,
                         DataPedido = p.DataPedido,
                         PedidoExternoId = p.PedidoExternoId ?? "",
+                        EhPedidoManual = EhPedidoManual(p),
                         NomeCliente = p.NomeCliente ?? "",
                         ClienteCpf = p.ClienteCpf,
+                        TipoEnvio = p.TipoEnvio,
+                        FormaPagamento = p.FormaPagamento,
+                        ValorFrete = p.ValorFrete,
                         Produto = it.Produto,
                         CodigoFornecedor = it.SKU ?? "",
                         Cor = it.Cor,
@@ -180,6 +184,47 @@ public static class ApiV1Routes
             return Results.Ok(pedido);
         });
 
+        g.MapPut("/pedidos/{pedidoId:int}", async (int pedidoId, UpdatePedidoManualRequest? body, AppDbContext db) =>
+        {
+            if (body == null)
+                return Results.BadRequest(new { error = "Corpo inválido." });
+            if (string.IsNullOrWhiteSpace(body.PedidoExternoId) || string.IsNullOrWhiteSpace(body.NomeCliente))
+                return Results.BadRequest(new { error = "ID externo e nome do cliente são obrigatórios." });
+
+            var pedido = await db.Pedidos.FirstOrDefaultAsync(p => p.Id == pedidoId);
+            if (pedido == null) return Results.NotFound();
+            if (!EhPedidoManual(pedido))
+                return Results.Json(new { error = "Só é possível editar pedidos criados manualmente (não integrados por webhook)." }, statusCode: 403);
+
+            var externo = body.PedidoExternoId.Trim();
+            var duplicado = await db.Pedidos.AnyAsync(p => p.PedidoExternoId == externo && p.Id != pedidoId);
+            if (duplicado)
+                return Results.BadRequest(new { error = "Já existe outro pedido com este ID externo." });
+
+            pedido.PedidoExternoId = externo;
+            pedido.NomeCliente = body.NomeCliente.Trim();
+            pedido.ClienteCpf = string.IsNullOrWhiteSpace(body.ClienteCpf) ? null : body.ClienteCpf.Trim();
+            pedido.DataPedido = TimeZoneBrasil.ParaUtcConsiderandoBrasilia(body.DataPedido);
+            pedido.TipoEnvio = string.IsNullOrWhiteSpace(body.TipoEnvio) ? null : body.TipoEnvio.Trim();
+            pedido.FormaPagamento = string.IsNullOrWhiteSpace(body.FormaPagamento) ? null : body.FormaPagamento.Trim();
+            pedido.ValorFrete = body.ValorFrete;
+
+            await db.SaveChangesAsync();
+            return Results.Ok(new { pedido.Id });
+        });
+
+        g.MapDelete("/pedidos/{pedidoId:int}", async (int pedidoId, AppDbContext db) =>
+        {
+            var pedido = await db.Pedidos.FirstOrDefaultAsync(p => p.Id == pedidoId);
+            if (pedido == null) return Results.NotFound();
+            if (!EhPedidoManual(pedido))
+                return Results.Json(new { error = "Só é possível excluir pedidos criados manualmente (não integrados por webhook)." }, statusCode: 403);
+
+            db.Pedidos.Remove(pedido);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
+
         g.MapPut("/pedidos/{pedidoId:int}/itens/{itemId:int}", async (int pedidoId, int itemId, UpdatePedidoItemRequest body, AppDbContext db) =>
         {
             if (string.IsNullOrWhiteSpace(body.Produto))
@@ -187,6 +232,9 @@ public static class ApiV1Routes
 
             var pedido = await db.Pedidos.Include(p => p.Itens).FirstOrDefaultAsync(p => p.Id == pedidoId);
             if (pedido == null) return Results.NotFound();
+
+            if (!EhPedidoManual(pedido))
+                return Results.Json(new { error = "Só é possível editar itens de pedidos criados manualmente (não integrados por webhook)." }, statusCode: 403);
 
             var item = pedido.Itens.FirstOrDefault(i => i.Id == itemId);
             if (item == null) return Results.NotFound();
@@ -447,6 +495,8 @@ public static class ApiV1Routes
         u.Ativo,
         u.CriadoEm
     };
+
+    private static bool EhPedidoManual(Pedido p) => string.IsNullOrWhiteSpace(p.jsonWebhook);
 
     // Aplica os mesmos filtros usados em /pedidos sobre a lista de itens
     // pendentes. Quando "ids" vem preenchido, ignora q/data e devolve só

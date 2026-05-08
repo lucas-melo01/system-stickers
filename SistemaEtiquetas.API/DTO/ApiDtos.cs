@@ -32,14 +32,30 @@ public class UpdatePedidoItemRequest
     public int Quantidade { get; set; } = 1;
 }
 
+public class UpdatePedidoManualRequest
+{
+    public string PedidoExternoId { get; set; } = string.Empty;
+    public string NomeCliente { get; set; } = string.Empty;
+    public string? ClienteCpf { get; set; }
+    public DateTime DataPedido { get; set; }
+    public string? TipoEnvio { get; set; }
+    public string? FormaPagamento { get; set; }
+    public decimal ValorFrete { get; set; }
+}
+
 public class PedidoItemRowDto
 {
     public int PedidoId { get; set; }
     public int PedidoItemId { get; set; }
     public DateTime DataPedido { get; set; }
     public string PedidoExternoId { get; set; } = string.Empty;
+    /// <summary>Pedido criado na UI (sem payload de webhook).</summary>
+    public bool EhPedidoManual { get; set; }
     public string NomeCliente { get; set; } = string.Empty;
     public string? ClienteCpf { get; set; }
+    public string? TipoEnvio { get; set; }
+    public string? FormaPagamento { get; set; }
+    public decimal ValorFrete { get; set; }
     public string Produto { get; set; } = string.Empty;
     /// <summary>Coluna <c>SKU</c> na base (código do fornecedor / MPN).</summary>
     public string CodigoFornecedor { get; set; } = string.Empty;

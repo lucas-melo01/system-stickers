@@ -13,8 +13,12 @@ type Row = {
   pedidoItemId: number;
   dataPedido: string;
   pedidoExternoId: string;
+  ehPedidoManual: boolean;
   nomeCliente: string;
   clienteCpf: string | null;
+  tipoEnvio: string | null;
+  formaPagamento: string | null;
+  valorFrete: number;
   produto: string;
   codigoFornecedor: string;
   cor: string | null;
