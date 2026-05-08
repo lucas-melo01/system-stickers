@@ -33,7 +33,7 @@ namespace SistemaEtiquetas.API.Services
             var linhaCodForn = codForn.Length > 28 ? codForn.Substring(0, 28) : codForn;
             var linha2Modelo = modelo.Length  > 35 ? modelo.Substring(0, 35)  : modelo;
             var linha3Cor    = cor.Length     > 20 ? cor.Substring(0, 20)     : cor;
-            var linha4Tam    = tamanho.Length > 10 ? tamanho.Substring(0, 10) : tamanho;
+            var linha4Tam    = tamanho.Length > 20 ? tamanho.Substring(0, 20) : tamanho;
             var linha5Cpf    = cpf.Length     > 20 ? cpf.Substring(0, 20)     : cpf;
 
             var zpl = $@"^XA
@@ -49,10 +49,10 @@ namespace SistemaEtiquetas.API.Services
 ^FO20,80^FDMODELO: {linha2Modelo}^FS
 
 ^FO20,115^FDCOR: {linha3Cor}^FS
-^FO250,115^FDTAM: {linha4Tam}^FS
+^FO20,150^FDTAM: {linha4Tam}^FS
 
-^FO20,150^FDCPF: {linha5Cpf}^FS
-^FO20,185^FDCOD.FORN.: {linhaCodForn}^FS
+^FO20,185^FDCPF: {linha5Cpf}^FS
+^FO20,220^FDCOD.FORN.: {linhaCodForn}^FS
 
 ^XZ";
 
