@@ -15,7 +15,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
 export type ManualPedidoActionsRow = {
   pedidoId: number;
@@ -241,7 +241,7 @@ export function ManualPedidoActions({ row, showPedidoWideActions }: Props) {
                 void excluirPedido();
               }}
             >
-              <DeleteOutlineIcon fontSize="small" />
+              <DeleteOutlineOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </>
@@ -261,7 +261,7 @@ export function ManualPedidoActions({ row, showPedidoWideActions }: Props) {
           <TextField
             label="Quantidade (etiquetas)"
             type="number"
-            inputProps={{ min: 1 }}
+            slotProps={{ htmlInput: { min: 1 } }}
             value={quantidade}
             onChange={(e) => setQuantidade(e.target.value)}
             fullWidth
@@ -319,7 +319,7 @@ export function ManualPedidoActions({ row, showPedidoWideActions }: Props) {
           <TextField
             label="Valor do frete"
             type="number"
-            inputProps={{ step: "0.01", min: 0 }}
+            slotProps={{ htmlInput: { step: "0.01", min: 0 } }}
             value={valorFrete}
             onChange={(e) => setValorFrete(e.target.value)}
             fullWidth
