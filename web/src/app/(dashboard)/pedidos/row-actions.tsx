@@ -44,10 +44,16 @@ export function PedidoRowActions({ itemId }: { itemId: number }) {
       await printZpl(printer, j.zpl);
 
       // 4. Marca como impresso.
-      await fetch(`/api/pedido-itens/${itemId}/marcar-impresso`, {
+      const markRes = await fetch(`/api/pedido-itens/${itemId}/marcar-impresso`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!markRes.ok) {
+        throw new Error(
+          (await markRes.text()) ||
+            `Erro ao marcar como impresso (HTTP ${markRes.status}). A etiqueta já pode ter sido enviada à impressora.`
+        );
+      }
 
       setMsg(`Enviado para ${printer}.`);
       router.refresh();

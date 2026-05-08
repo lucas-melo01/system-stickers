@@ -251,6 +251,27 @@ public static class ApiV1Routes
             return Results.Ok(new { item.Id, item.Impresso });
         });
 
+        g.MapPost("/pedido-itens/marcar-impresso-lote", async (MarcarImpressoLoteRequest? body, AppDbContext db) =>
+        {
+            if (body?.ItemIds is not { Count: > 0 })
+                return Results.BadRequest(new { error = "ItemIds não pode estar vazio." });
+
+            var uniqueIds = body.ItemIds.Distinct().ToList();
+            if (uniqueIds.Count > 2500)
+                return Results.BadRequest(new { error = "Máximo de 2500 itens por lote." });
+
+            var set = uniqueIds.ToHashSet();
+            var itens = await db.PedidoItens.Where(i => set.Contains(i.Id)).ToListAsync();
+            foreach (var item in itens)
+                item.Impresso = true;
+            await db.SaveChangesAsync();
+
+            var found = itens.Select(i => i.Id).ToHashSet();
+            var missing = uniqueIds.Where(id => !found.Contains(id)).ToList();
+            var payload = new MarcarImpressoLoteResponse { Marcados = itens.Count, MissingItemIds = missing };
+            return Results.Ok(payload);
+        });
+
         g.MapGet("/pedido-itens/pendentes-impressao", async (AppDbContext db, string? q, DateTime? data, string? ids) =>
         {
             var query = AplicarFiltrosPendentes(db.PedidoItens.AsNoTracking().Include(i => i.Pedido), q, data, ids);

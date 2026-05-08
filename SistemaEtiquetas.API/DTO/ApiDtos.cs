@@ -86,3 +86,14 @@ public class PendenteImpressaoDto
     public int ItemId { get; set; }
     public int Quantidade { get; set; }
 }
+
+public class MarcarImpressoLoteRequest
+{
+    public List<int> ItemIds { get; set; } = new();
+}
+
+public class MarcarImpressoLoteResponse
+{
+    public int Marcados { get; set; }
+    public List<int> MissingItemIds { get; set; } = new();
+}

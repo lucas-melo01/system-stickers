@@ -101,17 +101,47 @@ export function PrintAllPendingButton({
       const printer = await resolvePrinter();
       await printZplBatch(printer, lista.map((x) => x.zpl));
 
-      // 3. Marca todas como impressas em paralelo.
-      await Promise.allSettled(
-        lista.map((it) =>
-          fetch(`/api/pedido-itens/${it.itemId}/marcar-impresso`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        )
-      );
+      const itemIds = lista.map((x) => x.itemId);
+      const mr = await fetch(`/api/pedido-itens/marcar-impresso-lote`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ itemIds }),
+      });
+      if (!mr.ok) {
+        throw new Error(
+          (await mr.text()) ||
+            `Falha ao marcar etiquetas como impressas (HTTP ${mr.status}). Os rótulos podem já ter sido enviados à impressora.`
+        );
+      }
 
-      setMsg(`${lista.length} etiqueta(s) enviada(s) para ${printer}.`);
+      let marcados = itemIds.length;
+      let missing: number[] = [];
+      try {
+        const parsed = (await mr.json()) as {
+          marcados?: number;
+          missingItemIds?: number[];
+        };
+        if (typeof parsed.marcados === "number") marcados = parsed.marcados;
+        if (Array.isArray(parsed.missingItemIds)) missing = parsed.missingItemIds;
+      } catch {
+        // resposta já consumida só se texto vazio — mantém marcados=lista.length
+      }
+
+      if (missing.length > 0 || marcados !== lista.length) {
+        const detalhe =
+          missing.length > 0
+            ? `Itens não encontrados na base: ${missing.join(", ")}.`
+            : `Contagem marcada (${marcados}) menor que etiquetas imprimidas (${lista.length}); pode haver duplicados na resposta à impressora.`;
+        setErro(
+          `${marcados} de ${lista.length} etiqueta(s) marcada(s) no sistema. ${detalhe} As físicas já podem ter sido impressas — verifique a lista ou tente novamente.`
+        );
+        setMsg(`${lista.length} etiqueta(s) enviada(s) para ${printer}.`);
+      } else {
+        setMsg(`${lista.length} etiqueta(s) enviada(s) para ${printer} e marcada(s) no sistema.`);
+      }
       onPrinted?.();
       router.refresh();
     } catch (e) {
