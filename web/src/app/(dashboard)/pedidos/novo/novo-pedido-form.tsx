@@ -196,6 +196,7 @@ export function NovoPedidoForm() {
             <MenuItem value="">—</MenuItem>
             <MenuItem value="PAC">PAC</MenuItem>
             <MenuItem value="SEDEX">SEDEX</MenuItem>
+            <MenuItem value="Retira">Retira</MenuItem>
             <MenuItem value="Outro">Outro</MenuItem>
           </TextField>
           <TextField

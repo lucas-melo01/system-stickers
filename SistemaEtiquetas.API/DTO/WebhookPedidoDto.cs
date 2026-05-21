@@ -66,6 +66,9 @@ namespace SistemaEtiquetas.API.DTO
         public string nome { get; set; }
         public string sku { get; set; }
         public int quantidade { get; set; }
+
+        [JsonPropertyName("preco_venda")]
+        public decimal? preco_venda { get; set; }
     }
 
     public class EnvioDto
