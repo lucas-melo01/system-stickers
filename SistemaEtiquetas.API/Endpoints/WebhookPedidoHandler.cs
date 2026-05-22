@@ -52,8 +52,8 @@ public static class WebhookPedidoHandler
         };
         // Regra: 1 linha = 1 etiqueta. Mesmo que o payload traga quantidade > 1
         // explodimos em N linhas com Quantidade=1 (cada uma será uma etiqueta
-        // individual). A primeira linha leva preco_venda; as cópias ficam com 0
-        // para não duplicar o total no relatório.
+        // individual). A primeira linha leva preco_venda/preco_custo; as cópias
+        // ficam com 0 para não duplicar o total no relatório.
         foreach (var item in pedidoDto.itens)
         {
             var (skuLegado, cor, tamanho) = ParsearSku(item.sku);
@@ -70,6 +70,7 @@ public static class WebhookPedidoHandler
 
             var n = item.quantidade > 0 ? item.quantidade : 1;
             var valorVenda = item.preco_venda ?? 0m;
+            var valorCusto = item.preco_custo ?? 0m;
             for (var i = 0; i < n; i++)
             {
                 pedido.Itens.Add(new PedidoItem
@@ -79,6 +80,7 @@ public static class WebhookPedidoHandler
                     Cor = cor,
                     Tamanho = tamanho,
                     Quantidade = 1,
+                    ValorCusto = i == 0 ? valorCusto : 0,
                     ValorVenda = i == 0 ? valorVenda : 0
                 });
             }
