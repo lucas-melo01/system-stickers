@@ -53,7 +53,7 @@ export function NovoPedidoForm() {
   });
   const [nomeCliente, setNomeCliente] = useState("");
   const [clienteCpf, setClienteCpf] = useState("");
-  const [vendedor, setVendedor] = useState("Manual");
+  const [vendedor, setVendedor] = useState("");
   const [tipoEnvio, setTipoEnvio] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("");
   const [valorFrete, setValorFrete] = useState(0);
@@ -95,7 +95,7 @@ export function NovoPedidoForm() {
         nomeCliente: nomeCliente.trim(),
         clienteCpf: clienteCpf.trim() || null,
         dataPedido: dataIso,
-        vendedor: vendedor || "Manual",
+        vendedor: vendedor || null,
         tipoEnvio: tipoEnvio || null,
         formaPagamento: formaPagamento || null,
         valorFrete,
@@ -188,14 +188,19 @@ export function NovoPedidoForm() {
             size="small"
           />
           <TextField select label="Vendedor" value={vendedor} onChange={(e) => setVendedor(e.target.value)} size="small">
+            <MenuItem value="">—</MenuItem>
             <MenuItem value="Resume">Resume</MenuItem>
             <MenuItem value="DonnaKora">DonnaKora</MenuItem>
-            <MenuItem value="Manual">Manual</MenuItem>
+            <MenuItem value="Vendedora Eliane">Vendedora Eliane</MenuItem>
+            <MenuItem value="Vendedora Daiane">Vendedora Daiane</MenuItem>
+            <MenuItem value="Troca (Vend. Eliane)">Troca (Vend. Eliane)</MenuItem>
+            <MenuItem value="Troca (Vend. Daiane)">Troca (Vend. Daiane)</MenuItem>
           </TextField>
           <TextField select label="Tipo de envio" value={tipoEnvio} onChange={(e) => setTipoEnvio(e.target.value)} size="small">
             <MenuItem value="">—</MenuItem>
             <MenuItem value="PAC">PAC</MenuItem>
             <MenuItem value="SEDEX">SEDEX</MenuItem>
+            <MenuItem value="Melhor Envio (Transportadora)">Melhor Envio (Transportadora)</MenuItem>
             <MenuItem value="Retira">Retira</MenuItem>
             <MenuItem value="Outro">Outro</MenuItem>
           </TextField>
