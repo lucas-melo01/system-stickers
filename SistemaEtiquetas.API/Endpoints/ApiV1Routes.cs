@@ -340,10 +340,15 @@ public static class ApiV1Routes
         // ids=CSV de pedidoItemId quando o operador escolhe linhas específicas.
         g.MapGet("/pedido-itens/pendentes-impressao/zpl.json", async (AppDbContext db, string? q, DateTime? data, string? ids) =>
         {
+            var idList = ParseIdsCsv(ids);
             var query = AplicarFiltrosPendentes(db.PedidoItens.AsNoTracking().Include(i => i.Pedido), q, data, ids);
-            var itens = await query.OrderBy(i => i.Id).ToListAsync();
+            var itens = await query.ToListAsync();
+            // Com selecção explícita, preserva a ordem enviada pelo front (ordem da tabela).
+            var ordenados = idList.Count > 0
+                ? OrdenarItensPorIds(idList, itens)
+                : itens.OrderBy(i => i.Id).ToList();
             var svc = new EtiquetaService();
-            var payload = itens.Select(it => new
+            var payload = ordenados.Select(it => new
             {
                 itemId = it.Id,
                 zpl = svc.GerarZpl(it.Pedido, it)
@@ -502,6 +507,23 @@ public static class ApiV1Routes
     // pendentes. Quando "ids" vem preenchido, ignora q/data e devolve só
     // os PedidoItem.Id contidos no CSV — inclui já impressos para permitir
     // reimpressão por selecção. Sem "ids", mantém só !Impresso.
+    private static List<int> ParseIdsCsv(string? ids)
+    {
+        if (string.IsNullOrWhiteSpace(ids)) return [];
+        return ids
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
+            .Where(n => n > 0)
+            .Distinct()
+            .ToList();
+    }
+
+    private static List<PedidoItem> OrdenarItensPorIds(IReadOnlyList<int> idList, List<PedidoItem> itens)
+    {
+        var porId = itens.ToDictionary(i => i.Id);
+        return idList.Where(porId.ContainsKey).Select(id => porId[id]).ToList();
+    }
+
     private static IQueryable<PedidoItem> AplicarFiltrosPendentes(
         IQueryable<PedidoItem> source,
         string? q,
@@ -510,12 +532,7 @@ public static class ApiV1Routes
     {
         if (!string.IsNullOrWhiteSpace(ids))
         {
-            var idList = ids
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
-                .Where(n => n > 0)
-                .Distinct()
-                .ToList();
+            var idList = ParseIdsCsv(ids);
             if (idList.Count == 0)
                 return source.Where(_ => false);
             return source.Where(i => idList.Contains(i.Id));

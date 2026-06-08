@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 // BFF para o lote de ZPL de todas as etiquetas pendentes (consumido pelo
 // botão "Imprimir todas as pendentes" via QZ Tray). Espelha o endpoint
 // /api/pedido-itens/pendentes-impressao/zpl.json do backend .NET.
-// Repassa q/data/ids para que a impressão respeite o filtro corrente da
-// página (ou a selecção explícita do operador).
+// Repassa q/data/ids: selecção explícita (ids) ou todas as pendentes do filtro
+// global (q/data, sem paginação).
 export async function GET(request: NextRequest) {
   let base: string;
   try {

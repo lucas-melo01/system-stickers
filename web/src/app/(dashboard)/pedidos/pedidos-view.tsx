@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -81,7 +81,9 @@ export function PedidosView({
     () => result.items.map((r) => r.pedidoItemId).join(","),
     [result.items]
   );
-  useEffect(() => {
+  // useLayoutEffect evita janela em que a página já mudou mas a selecção antiga
+  // ainda alimenta o botão "Imprimir selecionados" (imprimia itens de outra página).
+  useLayoutEffect(() => {
     setSelecionados(new Set());
   }, [idsResposta]);
 
@@ -111,7 +113,12 @@ export function PedidosView({
     });
   }
 
-  const idsSelecionados = useMemo(() => Array.from(selecionados), [selecionados]);
+  // Só IDs visíveis na página actual, na ordem da tabela — evita IDs "fantasma"
+  // de outra página durante navegação e preserva a ordem de impressão.
+  const idsSelecionadosNaPagina = useMemo(
+    () => idsNaPagina.filter((id) => selecionados.has(id)),
+    [idsNaPagina, selecionados]
+  );
 
   /** Primeira linha manual de cada pedido na página: acções de cabeçalho e exclusão. */
   const mostrarAcoesDoPedido = useMemo(() => {
@@ -150,7 +157,7 @@ export function PedidosView({
           </Button>
           <PrintAllPendingButton
             variant="selecionados"
-            selectedIds={idsSelecionados}
+            selectedIds={idsSelecionadosNaPagina}
             onPrinted={() => setSelecionados(new Set())}
           />
           <PrintAllPendingButton q={q} data={data} />

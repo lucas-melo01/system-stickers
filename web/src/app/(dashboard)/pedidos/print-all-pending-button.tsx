@@ -47,6 +47,8 @@ export function PrintAllPendingButton({
     setMsg(null);
     setErro(null);
     setLoading(true);
+    // Congela os IDs no clique para não misturar com mudanças de página/selecção.
+    const idsSnapshot = isSelecao ? [...ids] : [];
     try {
       const supabase = createClient();
       const {
@@ -57,7 +59,11 @@ export function PrintAllPendingButton({
 
       const sp = new URLSearchParams();
       if (isSelecao) {
-        sp.set("ids", ids.join(","));
+        if (idsSnapshot.length === 0) {
+          setMsg("Nenhum item seleccionado na página actual.");
+          return;
+        }
+        sp.set("ids", idsSnapshot.join(","));
       } else {
         if (q) sp.set("q", q);
         if (data) sp.set("data", data);
@@ -89,9 +95,18 @@ export function PrintAllPendingButton({
           ? "pendente(s) do filtro actual"
           : "pendente(s)";
 
+      let avisoSelecao = "";
+      if (isSelecao) {
+        const devolvidos = new Set(lista.map((x) => x.itemId));
+        const emFalta = idsSnapshot.filter((id) => !devolvidos.has(id));
+        if (emFalta.length > 0) {
+          avisoSelecao = `\n\nAtenção: ${emFalta.length} item(ns) seleccionado(s) não foram encontrados (IDs: ${emFalta.join(", ")}).`;
+        }
+      }
+
       if (
         !window.confirm(
-          `Imprimir ${lista.length} etiqueta(s) ${descritivo}? Será enviado directo à impressora.`
+          `Imprimir ${lista.length} etiqueta(s) ${descritivo}? Será enviado directo à impressora.${avisoSelecao}`
         )
       ) {
         return;
