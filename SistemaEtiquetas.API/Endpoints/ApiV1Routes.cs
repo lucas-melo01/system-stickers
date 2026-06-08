@@ -180,7 +180,14 @@ public static class ApiV1Routes
                 }
             }
             db.Pedidos.Add(pedido);
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (DbDuplicateKeyHelper.IsUniqueViolation(ex))
+            {
+                return Results.BadRequest("Já existe pedido com este ID externo.");
+            }
             return Results.Ok(pedido);
         });
 

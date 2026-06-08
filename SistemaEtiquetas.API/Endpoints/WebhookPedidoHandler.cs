@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.DTO;
+using SistemaEtiquetas.API.Extensions;
 using SistemaEtiquetas.API.Services;
 using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Domain.Entities;
@@ -86,7 +87,14 @@ public static class WebhookPedidoHandler
             }
         }
         db.Pedidos.Add(pedido);
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (DbDuplicateKeyHelper.IsUniqueViolation(ex))
+        {
+            return Results.Ok("Pedido já processado");
+        }
         return Results.Ok("Pedido salvo com sucesso");
     }
 

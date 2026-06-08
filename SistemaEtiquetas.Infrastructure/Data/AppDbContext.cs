@@ -26,6 +26,7 @@ namespace SistemaEtiquetas.Infrastructure.Data
                 b.Property(p => p.Id).ValueGeneratedOnAdd();
 
                 b.Property(p => p.PedidoExternoId).IsRequired();
+                b.HasIndex(p => p.PedidoExternoId).IsUnique();
                 b.Property(p => p.NomeCliente).IsRequired();
 
                 b.HasMany(p => p.Itens)
