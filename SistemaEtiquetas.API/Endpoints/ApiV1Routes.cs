@@ -138,18 +138,30 @@ public static class ApiV1Routes
             });
         });
 
+        g.MapGet("/pedidos/proximo-id-externo", async (AppDbContext db) =>
+        {
+            var proximo = await ObterProximoPedidoExternoIdAsync(db);
+            return Results.Ok(new { pedidoExternoId = proximo });
+        });
+
         g.MapPost("/pedidos", async (CreatePedidoRequest body, AppDbContext db) =>
         {
             if (body?.Itens == null || !body.Itens.Any())
                 return Results.BadRequest("Nenhum item no pedido.");
 
-            var existente = await db.Pedidos.AnyAsync(p => p.PedidoExternoId == body.PedidoExternoId);
-            if (existente)
-                return Results.BadRequest("Já existe pedido com este ID externo.");
+            var pedidoExternoId = string.IsNullOrWhiteSpace(body.PedidoExternoId)
+                ? await ObterProximoPedidoExternoIdAsync(db)
+                : body.PedidoExternoId.Trim();
+
+            if (await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoExternoId))
+                pedidoExternoId = await ObterProximoPedidoExternoIdAsync(db);
+
+            if (await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoExternoId))
+                return Results.BadRequest("Não foi possível gerar um ID externo único. Tente novamente.");
 
             var pedido = new Pedido
             {
-                PedidoExternoId = body.PedidoExternoId,
+                PedidoExternoId = pedidoExternoId,
                 NomeCliente = body.NomeCliente,
                 ClienteCpf = body.ClienteCpf,
                 Vendedor = body.Vendedor ?? "Manual",
@@ -509,6 +521,18 @@ public static class ApiV1Routes
     };
 
     private static bool EhPedidoManual(Pedido p) => string.IsNullOrWhiteSpace(p.jsonWebhook);
+
+    private static async Task<string> ObterProximoPedidoExternoIdAsync(AppDbContext db)
+    {
+        var manualIds = await db.Pedidos.AsNoTracking()
+            .Where(p => p.jsonWebhook == null || p.jsonWebhook == "")
+            .Select(p => p.PedidoExternoId)
+            .ToListAsync();
+        var todosIds = await db.Pedidos.AsNoTracking()
+            .Select(p => p.PedidoExternoId)
+            .ToListAsync();
+        return PedidoExternoIdGenerator.GerarProximoDisponivel(manualIds, todosIds);
+    }
 
     // Aplica os mesmos filtros usados em /pedidos sobre a lista de itens
     // pendentes. Quando "ids" vem preenchido, ignora q/data e devolve só

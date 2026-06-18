@@ -211,8 +211,9 @@
                     <!-- Dados do Pedido -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="idExterno" class="form-label">ID Externo do Pedido *</label>
-                            <input type="text" class="form-control" id="idExterno" name="AddPedidoModel.IdExterno" required>
+                            <label for="idExterno" class="form-label">ID Externo do Pedido</label>
+                            <input type="text" class="form-control" id="idExterno" name="AddPedidoModel.IdExterno" value="@Model.ProximoPedidoExternoId" readonly>
+                            <small class="text-muted">Gerado automaticamente</small>
                         </div>
                         <div class="col-md-6">
                             <label for="dataPedido" class="form-label">Data do Pedido *</label>

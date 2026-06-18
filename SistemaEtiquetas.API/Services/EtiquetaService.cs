@@ -28,6 +28,8 @@ namespace SistemaEtiquetas.API.Services
             tamanho = string.IsNullOrWhiteSpace(tamanho) ? "N/A" : tamanho;
             var cpf = TextoEtiqueta.RemoverAcentos(pedido.ClienteCpf);
             var codForn = TextoEtiqueta.RemoverAcentos(item.SKU);
+            var envio = TextoEtiqueta.RemoverAcentos(pedido.TipoEnvio);
+            envio = string.IsNullOrWhiteSpace(envio) ? "N/A" : envio;
 
             var linha1Nome   = nome.Length    > 30 ? nome.Substring(0, 30)    : nome;
             var linhaCodForn = codForn.Length > 28 ? codForn.Substring(0, 28) : codForn;
@@ -35,6 +37,7 @@ namespace SistemaEtiquetas.API.Services
             var linha3Cor    = cor.Length     > 20 ? cor.Substring(0, 20)     : cor;
             var linha4Tam    = tamanho.Length > 20 ? tamanho.Substring(0, 20) : tamanho;
             var linha5Cpf    = cpf.Length     > 20 ? cpf.Substring(0, 20)     : cpf;
+            var linha6Envio  = envio.Length   > 30 ? envio.Substring(0, 30)   : envio;
 
             var zpl = $@"^XA
 ^LH0,0
@@ -52,7 +55,8 @@ namespace SistemaEtiquetas.API.Services
 ^FO20,150^FDTAM: {linha4Tam}^FS
 
 ^FO20,185^FDCPF: {linha5Cpf}^FS
-^FO20,220^FDCOD.FORN.: {linhaCodForn}^FS
+^FO20,220^FDENVIO: {linha6Envio}^FS
+^FO20,255^FDCOD.FORN.: {linhaCodForn}^FS
 
 ^XZ";
 

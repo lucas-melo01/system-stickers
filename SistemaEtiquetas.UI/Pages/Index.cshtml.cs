@@ -39,6 +39,7 @@ public class IndexModel : PageModel
     public string ErrorMessage { get; set; }
     public string SuccessMessage { get; set; }
     public string ZplCode { get; set; }
+    public string ProximoPedidoExternoId { get; set; }
 
     // Propriedades de paginação
     public int TotalPages { get; set; }
@@ -119,6 +120,8 @@ public class IndexModel : PageModel
             .Skip((PageNumber - 1) * ItemsPerPage)
             .Take(ItemsPerPage)
             .ToList();
+
+        await CarregarProximoPedidoExternoIdAsync();
     }
 
     public async Task<IActionResult> OnPostAddPedido()
@@ -131,20 +134,20 @@ public class IndexModel : PageModel
                 return await ReturnOnGetResult();
             }
 
-            // Validar se já existe pedido com este IdExterno
-            var pedidoExistente = await _db.Pedidos
-                .FirstOrDefaultAsync(p => p.PedidoExternoId == AddPedidoModel.IdExterno);
-
-            if (pedidoExistente != null)
-            {
-                ErrorMessage = $"Já existe um pedido com o ID externo {AddPedidoModel.IdExterno}.";
-                return await ReturnOnGetResult();
-            }
+            // ID externo gerado automaticamente para pedidos manuais
+            var manualIds = await _db.Pedidos.AsNoTracking()
+                .Where(p => p.jsonWebhook == null || p.jsonWebhook == "")
+                .Select(p => p.PedidoExternoId)
+                .ToListAsync();
+            var todosIds = await _db.Pedidos.AsNoTracking()
+                .Select(p => p.PedidoExternoId)
+                .ToListAsync();
+            var idExterno = PedidoExternoIdGenerator.GerarProximoDisponivel(manualIds, todosIds);
 
             // Criar novo pedido
             var pedido = new Pedido
             {
-                PedidoExternoId = AddPedidoModel.IdExterno,
+                PedidoExternoId = idExterno,
                 NomeCliente = AddPedidoModel.NomeCliente,
                 ClienteCpf = AddPedidoModel.ClienteCpf,
                 Vendedor = AddPedidoModel.Vendedor ?? "Manual",
@@ -241,7 +244,20 @@ public class IndexModel : PageModel
             }
         }
 
+        await CarregarProximoPedidoExternoIdAsync();
         return Page();
+    }
+
+    private async Task CarregarProximoPedidoExternoIdAsync()
+    {
+        var manualIds = await _db.Pedidos.AsNoTracking()
+            .Where(p => p.jsonWebhook == null || p.jsonWebhook == "")
+            .Select(p => p.PedidoExternoId)
+            .ToListAsync();
+        var todosIds = await _db.Pedidos.AsNoTracking()
+            .Select(p => p.PedidoExternoId)
+            .ToListAsync();
+        ProximoPedidoExternoId = PedidoExternoIdGenerator.GerarProximoDisponivel(manualIds, todosIds);
     }
 
     // Método para aplicar migrações em runtime
@@ -480,9 +496,7 @@ public class PedidoItemExibicao
 
 public class AddPedidoModel
 {
-    [Required(ErrorMessage = "ID Externo é obrigatório")]
-    [StringLength(100, MinimumLength = 1, ErrorMessage = "ID Externo deve ter até 100 caracteres")]
-    public string IdExterno { get; set; }
+    public string? IdExterno { get; set; }
 
     [Required(ErrorMessage = "Nome do Cliente é obrigatório")]
     [StringLength(200, MinimumLength = 3, ErrorMessage = "Nome deve ter entre 3 e 200 caracteres")]

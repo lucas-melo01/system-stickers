@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -46,6 +46,7 @@ export function NovoPedidoForm() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pedidoExternoId, setPedidoExternoId] = useState("");
+  const [carregandoId, setCarregandoId] = useState(true);
   const [dataPedido, setDataPedido] = useState(() => {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -58,6 +59,30 @@ export function NovoPedidoForm() {
   const [formaPagamento, setFormaPagamento] = useState("");
   const [valorFrete, setValorFrete] = useState(0);
   const [itens, setItens] = useState<Linha[]>([linhaVazia()]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch("/api/pedidos/proximo-id-externo", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { pedidoExternoId?: string };
+        if (!cancelled && data.pedidoExternoId) setPedidoExternoId(data.pedidoExternoId);
+      } finally {
+        if (!cancelled) setCarregandoId(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function addLinha() {
     setItens((rows) => [...rows, linhaVazia()]);
@@ -91,7 +116,7 @@ export function NovoPedidoForm() {
       }
       const dataIso = new Date(dataPedido).toISOString();
       const body = {
-        pedidoExternoId: pedidoExternoId.trim(),
+        pedidoExternoId: pedidoExternoId.trim() || null,
         nomeCliente: nomeCliente.trim(),
         clienteCpf: clienteCpf.trim() || null,
         dataPedido: dataIso,
@@ -158,11 +183,11 @@ export function NovoPedidoForm() {
           }}
         >
           <TextField
-            required
             label="ID externo do pedido"
-            value={pedidoExternoId}
-            onChange={(e) => setPedidoExternoId(e.target.value)}
+            value={carregandoId ? "…" : pedidoExternoId}
             size="small"
+            disabled
+            helperText="Gerado automaticamente"
           />
           <TextField
             required
