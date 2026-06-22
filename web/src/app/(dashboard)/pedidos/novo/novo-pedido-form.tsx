@@ -216,10 +216,10 @@ export function NovoPedidoForm() {
             <MenuItem value="">—</MenuItem>
             <MenuItem value="Resume">Resume</MenuItem>
             <MenuItem value="DonnaKora">DonnaKora</MenuItem>
-            <MenuItem value="Vendedora Eliane">Vendedora Eliane</MenuItem>
-            <MenuItem value="Vendedora Daiane">Vendedora Daiane</MenuItem>
-            <MenuItem value="Troca (Vend. Eliane)">Troca (Vend. Eliane)</MenuItem>
-            <MenuItem value="Troca (Vend. Daiane)">Troca (Vend. Daiane)</MenuItem>
+            <MenuItem value="Eliane Vendedora">Eliane Vendedora</MenuItem>
+            <MenuItem value="Daiane Vendedora">Daiane Vendedora</MenuItem>
+            <MenuItem value="Eliane (Troca)">Eliane (Troca)</MenuItem>
+            <MenuItem value="Daiane (Troca)">Daiane (Troca)</MenuItem>
           </TextField>
           <TextField select label="Tipo de envio" value={tipoEnvio} onChange={(e) => setTipoEnvio(e.target.value)} size="small">
             <MenuItem value="">—</MenuItem>
