@@ -9,6 +9,8 @@ namespace SistemaEtiquetas.API.Services;
 /// </summary>
 public sealed class LojaIntegradaProdutoApi
 {
+    private const string CdnBase = "https://cdn.awsli.com.br/";
+
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -29,11 +31,44 @@ public sealed class LojaIntegradaProdutoApi
         _http.Timeout = TimeSpan.FromSeconds(30);
     }
 
+    public sealed class ProdutoDetalheLi
+    {
+        public string? Mpn { get; init; }
+        public string? ImagemUrl { get; init; }
+    }
+
     /// <summary>Devolve o MPN ou null se credenciais ausentes, erro HTTP ou resposta sem mpn.</summary>
     public async Task<string?> ObterMpnAsync(
         long produtoId,
         string vendedor,
         CancellationToken cancellationToken = default)
+    {
+        var detalhes = await ObterDetalhesProdutoAsync(produtoId, vendedor, cancellationToken);
+        return detalhes?.Mpn;
+    }
+
+    /// <summary>MPN + URL pública da imagem (CDN awsli), sem persistir.</summary>
+    public async Task<ProdutoDetalheLi?> ObterDetalhesProdutoAsync(
+        long produtoId,
+        string vendedor,
+        CancellationToken cancellationToken = default)
+    {
+        var dto = await FetchProdutoAsync(produtoId, vendedor, cancellationToken);
+        if (dto == null) return null;
+
+        var mpn = dto.mpn?.Trim();
+        var imagemUrl = ResolverImagemUrl(dto);
+        return new ProdutoDetalheLi
+        {
+            Mpn = string.IsNullOrEmpty(mpn) ? null : mpn,
+            ImagemUrl = imagemUrl,
+        };
+    }
+
+    private async Task<ProdutoV1Response?> FetchProdutoAsync(
+        long produtoId,
+        string vendedor,
+        CancellationToken cancellationToken)
     {
         var creds = ResolverCredenciais(vendedor);
         var baseUrl = (_opt.BaseUrl ?? "").Trim().TrimEnd('/');
@@ -64,15 +99,46 @@ public sealed class LojaIntegradaProdutoApi
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var dto = await JsonSerializer.DeserializeAsync<ProdutoV1Response>(stream, JsonOpts, cancellationToken);
-            var mpn = dto?.mpn?.Trim();
-            return string.IsNullOrEmpty(mpn) ? null : mpn;
+            return await JsonSerializer.DeserializeAsync<ProdutoV1Response>(stream, JsonOpts, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha ao obter MPN do produto {ProdutoId} ({Vendedor})", produtoId, vendedor);
+            _logger.LogWarning(ex, "Falha ao obter produto {ProdutoId} ({Vendedor})", produtoId, vendedor);
             return null;
         }
+    }
+
+    private static string? ResolverImagemUrl(ProdutoV1Response dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.imagem_url))
+            return dto.imagem_url.Trim();
+
+        if (!string.IsNullOrWhiteSpace(dto.imagem))
+            return MontarCdnUrl(dto.imagem);
+
+        if (dto.imagens != null)
+        {
+            foreach (var img in dto.imagens)
+            {
+                if (!string.IsNullOrWhiteSpace(img.imagem_url))
+                    return img.imagem_url.Trim();
+                if (!string.IsNullOrWhiteSpace(img.caminho))
+                    return MontarCdnUrl(img.caminho);
+                if (!string.IsNullOrWhiteSpace(img.imagem))
+                    return MontarCdnUrl(img.imagem);
+            }
+        }
+
+        return null;
+    }
+
+    private static string MontarCdnUrl(string path)
+    {
+        var p = path.Trim().TrimStart('/');
+        if (p.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            p.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return p;
+        return CdnBase + p;
     }
 
     private LojaIntegradaLojaCredentials? ResolverCredenciais(string vendedor)
@@ -87,5 +153,15 @@ public sealed class LojaIntegradaProdutoApi
     private sealed class ProdutoV1Response
     {
         public string? mpn { get; set; }
+        public string? imagem { get; set; }
+        public string? imagem_url { get; set; }
+        public List<ProdutoImagemResponse>? imagens { get; set; }
+    }
+
+    private sealed class ProdutoImagemResponse
+    {
+        public string? imagem { get; set; }
+        public string? imagem_url { get; set; }
+        public string? caminho { get; set; }
     }
 }

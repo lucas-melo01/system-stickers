@@ -13,6 +13,12 @@ namespace SistemaEtiquetas.Infrastructure.Data
 
         public DbSet<UsuarioSistema> Usuarios { get; set; }
 
+        public DbSet<Fornecedor> Fornecedores { get; set; }
+
+        public DbSet<Produto> Produtos { get; set; }
+
+        public DbSet<NotificacaoFornecedor> NotificacoesFornecedor { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
@@ -45,6 +51,52 @@ namespace SistemaEtiquetas.Infrastructure.Data
             {
                 b.HasKey(u => u.Id);
                 b.Property(u => u.Email).IsRequired();
+            });
+
+            modelBuilder.Entity<Fornecedor>(b =>
+            {
+                b.HasKey(f => f.Id);
+                b.Property(f => f.Id).ValueGeneratedOnAdd();
+                b.Property(f => f.NomeRazaoSocial).IsRequired();
+                b.Property(f => f.WhatsApp).IsRequired();
+            });
+
+            modelBuilder.Entity<Produto>(b =>
+            {
+                b.HasKey(p => p.Id);
+                b.Property(p => p.Id).ValueGeneratedOnAdd();
+                b.Property(p => p.Nome).IsRequired();
+                b.HasIndex(p => new { p.Loja, p.ProdutoIdLojaIntegrada }).IsUnique();
+                b.HasOne(p => p.Fornecedor)
+                    .WithMany(f => f.Produtos)
+                    .HasForeignKey(p => p.FornecedorId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<NotificacaoFornecedor>(b =>
+            {
+                b.HasKey(n => n.Id);
+                b.Property(n => n.Id).ValueGeneratedOnAdd();
+                b.Property(n => n.PedidoExternoId).IsRequired();
+                b.Property(n => n.NomeCliente).IsRequired();
+                b.Property(n => n.MensagemTexto).IsRequired();
+                b.HasOne(n => n.Pedido)
+                    .WithMany()
+                    .HasForeignKey(n => n.PedidoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                b.HasOne(n => n.PedidoItem)
+                    .WithMany()
+                    .HasForeignKey(n => n.PedidoItemId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                b.HasOne(n => n.Fornecedor)
+                    .WithMany()
+                    .HasForeignKey(n => n.FornecedorId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                b.HasOne(n => n.Produto)
+                    .WithMany()
+                    .HasForeignKey(n => n.ProdutoId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                b.HasIndex(n => n.CriadoEm);
             });
 
             base.OnModelCreating(modelBuilder);

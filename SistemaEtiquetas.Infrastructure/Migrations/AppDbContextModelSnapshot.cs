@@ -181,6 +181,193 @@ namespace SistemaEtiquetas.Infrastructure.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.Fornecedor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeRazaoSocial")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WhatsApp")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Fornecedores");
+                });
+
+            modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.Produto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("CodigoFornecedor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("FornecedorId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Loja")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("ProdutoIdLojaIntegrada")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Sku")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FornecedorId");
+
+                    b.HasIndex("Loja", "ProdutoIdLojaIntegrada")
+                        .IsUnique();
+
+                    b.ToTable("Produtos");
+                });
+
+            modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.NotificacaoFornecedor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EnviadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Erro")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("FornecedorId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Loja")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MensagemTexto")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeCliente")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PedidoExternoId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PedidoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PedidoItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProdutoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WhatsAppMessageId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CriadoEm");
+
+                    b.HasIndex("FornecedorId");
+
+                    b.HasIndex("PedidoId");
+
+                    b.HasIndex("PedidoItemId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.ToTable("NotificacoesFornecedor");
+                });
+
+            modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.NotificacaoFornecedor", b =>
+                {
+                    b.HasOne("SistemaEtiquetas.Domain.Entities.Fornecedor", "Fornecedor")
+                        .WithMany()
+                        .HasForeignKey("FornecedorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SistemaEtiquetas.Domain.Entities.PedidoItem", "PedidoItem")
+                        .WithMany()
+                        .HasForeignKey("PedidoItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SistemaEtiquetas.Domain.Entities.Pedido", "Pedido")
+                        .WithMany()
+                        .HasForeignKey("PedidoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SistemaEtiquetas.Domain.Entities.Produto", "Produto")
+                        .WithMany()
+                        .HasForeignKey("ProdutoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Fornecedor");
+
+                    b.Navigation("Pedido");
+
+                    b.Navigation("PedidoItem");
+
+                    b.Navigation("Produto");
+                });
+
+            modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.Produto", b =>
+                {
+                    b.HasOne("SistemaEtiquetas.Domain.Entities.Fornecedor", "Fornecedor")
+                        .WithMany("Produtos")
+                        .HasForeignKey("FornecedorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Fornecedor");
+                });
+
             modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.PedidoItem", b =>
                 {
                     b.HasOne("SistemaEtiquetas.Domain.Entities.Pedido", "Pedido")
@@ -190,6 +377,11 @@ namespace SistemaEtiquetas.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Pedido");
+                });
+
+            modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.Fornecedor", b =>
+                {
+                    b.Navigation("Produtos");
                 });
 
             modelBuilder.Entity("SistemaEtiquetas.Domain.Entities.Pedido", b =>

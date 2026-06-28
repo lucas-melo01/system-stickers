@@ -438,6 +438,8 @@ public static class ApiV1Routes
             return Results.File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name);
         });
 
+        g.MapCadastrosRoutes();
+
         // Rotas administrativas ficam sempre registadas para que o cliente receba
         // 501 / 401 / 403 explícitos em vez de um 404 silencioso quando a
         // autenticação não está configurada no Render.

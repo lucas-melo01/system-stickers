@@ -15,7 +15,8 @@ public static class WebhookPedidoHandler
         string payload,
         string vendedor,
         AppDbContext db,
-        LojaIntegradaProdutoApi catalogoProduto)
+        LojaIntegradaProdutoApi catalogoProduto,
+        EncomendaNotificacaoService? encomendaNotificacao = null)
     {
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var pedidoDto = JsonSerializer.Deserialize<WebhookPedidoDto>(payload, options);
@@ -29,10 +30,6 @@ public static class WebhookPedidoHandler
         if (await db.Pedidos.AnyAsync(p => p.PedidoExternoId == pedidoExternoId))
             return Results.Ok("Pedido já processado");
 
-        // A marketplace tipicamente envia data_criacao sem indicador de zona
-        // (Kind=Unspecified). Antes assumíamos UTC e o registo ficava 3h
-        // adiantado em relação a Brasília. Agora interpretamos Unspecified
-        // como horário de Brasília. Se vier com 'Z' ou offset, respeita-se.
         var dataPedido = TimeZoneBrasil.ParaUtcConsiderandoBrasilia(pedidoDto.data_criacao);
         var tipoEnvio = pedidoDto.envios?.FirstOrDefault()?.forma_envio?.nome ?? "N/A";
         var valorFrete = pedidoDto.envios?.FirstOrDefault()?.valor
@@ -51,13 +48,16 @@ public static class WebhookPedidoHandler
             ValorFrete = valorFrete,
             jsonWebhook = payload
         };
-        // Regra: 1 linha = 1 etiqueta. Mesmo que o payload traga quantidade > 1
-        // explodimos em N linhas com Quantidade=1 (cada uma será uma etiqueta
-        // individual). A primeira linha leva preco_venda/preco_custo; as cópias
-        // ficam com 0 para não duplicar o total no relatório.
+
+        var itensEncomenda = new List<(PedidoItem item, long produtoIdLojaIntegrada)>();
+
         foreach (var item in pedidoDto.itens)
         {
-            var (skuLegado, cor, tamanho) = ParsearSku(item.sku);
+            var skuOriginal = item.sku;
+            var ehEncomenda = EhEncomenda(skuOriginal);
+            var skuParaParse = ehEncomenda ? RemoverSufixoEnc(skuOriginal) : skuOriginal;
+
+            var (skuLegado, cor, tamanho) = ParsearSku(skuParaParse);
             string sku;
             if (item.produto_id > 0)
             {
@@ -74,7 +74,7 @@ public static class WebhookPedidoHandler
             var valorCusto = item.preco_custo ?? 0m;
             for (var i = 0; i < n; i++)
             {
-                pedido.Itens.Add(new PedidoItem
+                var pedidoItem = new PedidoItem
                 {
                     Produto = item.nome,
                     SKU = sku,
@@ -83,9 +83,14 @@ public static class WebhookPedidoHandler
                     Quantidade = 1,
                     ValorCusto = i == 0 ? valorCusto : 0,
                     ValorVenda = i == 0 ? valorVenda : 0
-                });
+                };
+                pedido.Itens.Add(pedidoItem);
+
+                if (ehEncomenda && item.produto_id > 0)
+                    itensEncomenda.Add((pedidoItem, item.produto_id));
             }
         }
+
         db.Pedidos.Add(pedido);
         try
         {
@@ -95,7 +100,39 @@ public static class WebhookPedidoHandler
         {
             return Results.Ok("Pedido já processado");
         }
+
+        if (itensEncomenda.Count > 0 && encomendaNotificacao != null)
+        {
+            var loja = LojaOrigemHelper.FromVendedor(vendedor);
+            if (loja.HasValue)
+            {
+                try
+                {
+                    await encomendaNotificacao.ProcessarEncomendasAsync(
+                        pedido, loja.Value, vendedor, itensEncomenda);
+                }
+                catch (Exception ex)
+                {
+                    // Pedido já salvo; falha na notificação não deve reverter o pedido
+                    Console.Error.WriteLine($"Erro ao processar notificações encomenda: {ex.Message}");
+                }
+            }
+        }
+
         return Results.Ok("Pedido salvo com sucesso");
+    }
+
+    public static bool EhEncomenda(string? sku) =>
+        !string.IsNullOrWhiteSpace(sku) &&
+        sku.TrimEnd().EndsWith("-enc", StringComparison.OrdinalIgnoreCase);
+
+    public static string? RemoverSufixoEnc(string? sku)
+    {
+        if (string.IsNullOrWhiteSpace(sku)) return sku;
+        var s = sku.TrimEnd();
+        if (s.EndsWith("-enc", StringComparison.OrdinalIgnoreCase))
+            return s[..^4];
+        return s;
     }
 
     public static (string sku, string? cor, string? tamanho) ParsearSku(string? skuCompleto)

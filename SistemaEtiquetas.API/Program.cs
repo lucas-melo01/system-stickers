@@ -2,6 +2,7 @@
 using SistemaEtiquetas.API.Endpoints;
 using SistemaEtiquetas.API.Extensions;
 using SistemaEtiquetas.API.Services;
+using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,10 +17,24 @@ builder.Services.AddSistemaEtiquetasCors(builder.Configuration);
 builder.Services.AddSistemaEtiquetasAuth(builder.Configuration);
 
 builder.Services.AddScoped<SistemaEtiquetas.API.Services.ImpressaoService>();
+builder.Services.AddScoped<EncomendaNotificacaoService>();
 
 builder.Services.Configure<LojaIntegradaApiOptions>(
     builder.Configuration.GetSection("LojaIntegrada"));
 builder.Services.AddHttpClient<LojaIntegradaProdutoApi>();
+
+builder.Services.Configure<WhatsAppApiOptions>(options =>
+{
+    options.PhoneNumberId = builder.Configuration["WhatsApp:PhoneNumberId"]
+        ?? Environment.GetEnvironmentVariable("WHATSAPP_PHONE_NUMBER_ID") ?? "";
+    options.AccessToken = builder.Configuration["WhatsApp:AccessToken"]
+        ?? Environment.GetEnvironmentVariable("WHATSAPP_ACCESS_TOKEN") ?? "";
+    options.TemplateName = builder.Configuration["WhatsApp:TemplateName"]
+        ?? Environment.GetEnvironmentVariable("WHATSAPP_TEMPLATE_NAME") ?? "";
+    options.TemplateLanguage = builder.Configuration["WhatsApp:TemplateLanguage"]
+        ?? Environment.GetEnvironmentVariable("WHATSAPP_TEMPLATE_LANGUAGE") ?? "pt_BR";
+});
+builder.Services.AddHttpClient<WhatsAppCloudApiService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -55,20 +70,36 @@ var reimprimir = app.MapPost("/reimprimir/{itemId:int}", LegacyReimprimir.Retorn
 if (authConfigured)
     reimprimir.RequireAuthorization();
 
-app.MapPost("/webhook/pedido/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo) =>
+app.MapPost("/webhook/pedido/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo, EncomendaNotificacaoService encomenda) =>
 {
     if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
         return Results.Unauthorized();
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
-    return await WebhookPedidoHandler.Processar(payload, "Resume Modas", db, catalogo);
+    return await WebhookPedidoHandler.Processar(payload, "Resume Modas", db, catalogo, encomenda);
 });
 
-app.MapPost("/webhook/pedido/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo) =>
+app.MapPost("/webhook/pedido/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo, EncomendaNotificacaoService encomenda) =>
 {
     if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
         return Results.Unauthorized();
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
-    return await WebhookPedidoHandler.Processar(payload, "DonnaKora", db, catalogo);
+    return await WebhookPedidoHandler.Processar(payload, "DonnaKora", db, catalogo, encomenda);
+});
+
+app.MapPost("/webhook/produto/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg) =>
+{
+    if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
+        return Results.Unauthorized();
+    var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
+    return await WebhookProdutoHandler.Processar(payload, LojaOrigem.ResumeModas, db);
+});
+
+app.MapPost("/webhook/produto/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg) =>
+{
+    if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
+        return Results.Unauthorized();
+    var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
+    return await WebhookProdutoHandler.Processar(payload, LojaOrigem.DonnaKora, db);
 });
 
 app.MapGet("/", () => "API Sistema Etiquetas");
