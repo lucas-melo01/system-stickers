@@ -249,7 +249,13 @@ export function FornecedoresClient({
         </Table>
       </TableContainer>
 
-      <PaginationBar page={page} totalPages={initial.totalPages} buildHref={buildHref} />
+      <PaginationBar
+        page={page}
+        totalPages={initial.totalPages}
+        totalCount={initial.totalCount}
+        pageSize={initial.pageSize}
+        buildHref={buildHref}
+      />
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>{editId ? "Editar fornecedor" : "Novo fornecedor"}</DialogTitle>
@@ -308,11 +314,6 @@ export function FornecedoresClient({
             renderInput={(params) => (
               <TextField {...params} label="Selecione os produtos deste fornecedor" placeholder="Buscar…" />
             )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip {...getTagProps({ index })} key={option.id} label={option.nome} size="small" />
-              ))
-            }
           />
         </DialogContent>
         <DialogActions>

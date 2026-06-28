@@ -65,7 +65,7 @@ export function PedidoCompraView({
 
       <Paper variant="outlined" component="form" method="get" sx={{ p: 2 }}>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-end" }}>
-          <TextField name="data" label="Data" type="date" defaultValue={data ?? ""} size="small" InputLabelProps={{ shrink: true }} />
+          <TextField name="data" label="Data" type="date" defaultValue={data ?? ""} size="small" slotProps={{ inputLabel: { shrink: true } }} />
           <TextField name="status" select label="Status" defaultValue={status ?? ""} size="small" sx={{ minWidth: 140 }}>
             <MenuItem value="">Todos</MenuItem>
             <MenuItem value="Enviado">Enviado</MenuItem>
@@ -127,7 +127,13 @@ export function PedidoCompraView({
         </Table>
       </TableContainer>
 
-      <PaginationBar page={page} totalPages={initial.totalPages} buildHref={buildHref} />
+      <PaginationBar
+        page={page}
+        totalPages={initial.totalPages}
+        totalCount={initial.totalCount}
+        pageSize={initial.pageSize}
+        buildHref={buildHref}
+      />
 
       <Dialog open={!!detalhe} onClose={() => setDetalhe(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Detalhe da notificação</DialogTitle>

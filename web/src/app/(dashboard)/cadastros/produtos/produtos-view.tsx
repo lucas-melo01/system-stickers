@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -129,7 +128,13 @@ export function ProdutosView({
         </Table>
       </TableContainer>
 
-      <PaginationBar page={page} totalPages={initial.totalPages} buildHref={buildHref} />
+      <PaginationBar
+        page={page}
+        totalPages={initial.totalPages}
+        totalCount={initial.totalCount}
+        pageSize={initial.pageSize}
+        buildHref={buildHref}
+      />
     </Box>
   );
 }
