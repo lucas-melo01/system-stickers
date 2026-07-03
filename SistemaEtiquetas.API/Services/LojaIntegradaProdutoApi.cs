@@ -33,8 +33,10 @@ public sealed class LojaIntegradaProdutoApi
 
     public sealed class ProdutoDetalheLi
     {
+        public string? Nome { get; init; }
         public string? Mpn { get; init; }
         public string? ImagemUrl { get; init; }
+        public string? Pai { get; init; }
     }
 
     /// <summary>Devolve o MPN ou null se credenciais ausentes, erro HTTP ou resposta sem mpn.</summary>
@@ -47,7 +49,7 @@ public sealed class LojaIntegradaProdutoApi
         return detalhes?.Mpn;
     }
 
-    /// <summary>MPN + URL pública da imagem (CDN awsli), sem persistir.</summary>
+    /// <summary>Nome + MPN + URL pública da imagem (CDN awsli), sem persistir.</summary>
     public async Task<ProdutoDetalheLi?> ObterDetalhesProdutoAsync(
         long produtoId,
         string vendedor,
@@ -56,13 +58,43 @@ public sealed class LojaIntegradaProdutoApi
         var dto = await FetchProdutoAsync(produtoId, vendedor, cancellationToken);
         if (dto == null) return null;
 
+        var nome = dto.nome?.Trim();
         var mpn = dto.mpn?.Trim();
         var imagemUrl = ResolverImagemUrl(dto);
         return new ProdutoDetalheLi
         {
+            Nome = string.IsNullOrEmpty(nome) ? null : nome,
             Mpn = string.IsNullOrEmpty(mpn) ? null : mpn,
             ImagemUrl = imagemUrl,
+            Pai = dto.pai?.Trim(),
         };
+    }
+
+    /// <summary>
+    /// Resolve o nome do produto: se o produto for uma variação (nome vazio, pai preenchido),
+    /// busca o nome no produto pai. Retorna null se nada for encontrado.
+    /// </summary>
+    public async Task<string?> ObterNomeAsync(
+        long produtoId,
+        string vendedor,
+        string? paiUri = null,
+        CancellationToken cancellationToken = default)
+    {
+        var detalhes = await ObterDetalhesProdutoAsync(produtoId, vendedor, cancellationToken);
+        if (detalhes == null) return null;
+
+        if (!string.IsNullOrEmpty(detalhes.Nome))
+            return detalhes.Nome;
+
+        // Variação: tenta obter nome do produto pai
+        var paiUriResolvido = detalhes.Pai ?? paiUri;
+        if (string.IsNullOrEmpty(paiUriResolvido)) return null;
+
+        var paiIdStr = paiUriResolvido.TrimEnd('/').Split('/').Last();
+        if (!long.TryParse(paiIdStr, out var paiId) || paiId <= 0) return null;
+
+        var paiDto = await FetchProdutoAsync(paiId, vendedor, cancellationToken);
+        return paiDto?.nome?.Trim() is { Length: > 0 } n ? n : null;
     }
 
     private async Task<ProdutoV1Response?> FetchProdutoAsync(
@@ -152,7 +184,9 @@ public sealed class LojaIntegradaProdutoApi
 
     private sealed class ProdutoV1Response
     {
+        public string? nome { get; set; }
         public string? mpn { get; set; }
+        public string? pai { get; set; }
         public string? imagem { get; set; }
         public string? imagem_url { get; set; }
         public List<ProdutoImagemResponse>? imagens { get; set; }

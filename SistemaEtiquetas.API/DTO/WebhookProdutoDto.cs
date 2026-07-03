@@ -15,4 +15,7 @@ public class WebhookProdutoDto
     public bool ativo { get; set; } = true;
 
     public bool removido { get; set; }
+
+    /// <summary>URI do produto pai (ex: /api/v1/produto/123456). Presente em variações (atributo_opcao).</summary>
+    public string? pai { get; set; }
 }

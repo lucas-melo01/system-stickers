@@ -86,20 +86,20 @@ app.MapPost("/webhook/pedido/donnakora", async (HttpContext http, AppDbContext d
     return await WebhookPedidoHandler.Processar(payload, "DonnaKora", db, catalogo, encomenda);
 });
 
-app.MapPost("/webhook/produto/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg) =>
+app.MapPost("/webhook/produto/resumemodas", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo) =>
 {
     if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
         return Results.Unauthorized();
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
-    return await WebhookProdutoHandler.Processar(payload, LojaOrigem.ResumeModas, db);
+    return await WebhookProdutoHandler.Processar(payload, LojaOrigem.ResumeModas, db, catalogo);
 });
 
-app.MapPost("/webhook/produto/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg) =>
+app.MapPost("/webhook/produto/donnakora", async (HttpContext http, AppDbContext db, IConfiguration cfg, LojaIntegradaProdutoApi catalogo) =>
 {
     if (!WebhookSecretHelper.Validate(cfg, http.Request.Headers))
         return Results.Unauthorized();
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
-    return await WebhookProdutoHandler.Processar(payload, LojaOrigem.DonnaKora, db);
+    return await WebhookProdutoHandler.Processar(payload, LojaOrigem.DonnaKora, db, catalogo);
 });
 
 app.MapGet("/", () => "API Sistema Etiquetas");

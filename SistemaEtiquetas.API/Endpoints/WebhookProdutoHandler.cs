@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaEtiquetas.API.DTO;
+using SistemaEtiquetas.API.Services;
+using SistemaEtiquetas.Domain;
 using SistemaEtiquetas.Domain.Entities;
 using SistemaEtiquetas.Infrastructure.Data;
 using System.Text.Json;
@@ -8,7 +10,11 @@ namespace SistemaEtiquetas.API.Endpoints;
 
 public static class WebhookProdutoHandler
 {
-    public static async Task<IResult> Processar(string payload, LojaOrigem loja, AppDbContext db)
+    public static async Task<IResult> Processar(
+        string payload,
+        LojaOrigem loja,
+        AppDbContext db,
+        LojaIntegradaProdutoApi catalogo)
     {
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var dto = JsonSerializer.Deserialize<WebhookProdutoDto>(payload, options);
@@ -29,9 +35,16 @@ public static class WebhookProdutoHandler
             return Results.Ok("Produto desativado (removido na LI).");
         }
 
+        // Variações (atributo_opcao) chegam com nome vazio — busca o nome no produto pai
         var nome = (dto.nome ?? "").Trim();
         if (string.IsNullOrEmpty(nome))
-            return Results.BadRequest("Nome do produto é obrigatório.");
+        {
+            var vendedor = LojaOrigemHelper.ToVendedorLabel(loja);
+            nome = await catalogo.ObterNomeAsync(dto.id, vendedor, dto.pai) ?? "";
+        }
+
+        if (string.IsNullOrEmpty(nome))
+            return Results.Ok("Produto ignorado: variação sem nome e sem produto pai acessível.");
 
         var sku = string.IsNullOrWhiteSpace(dto.sku) ? null : dto.sku.Trim();
         var mpn = string.IsNullOrWhiteSpace(dto.mpn) ? null : dto.mpn.Trim();
