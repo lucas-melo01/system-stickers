@@ -308,7 +308,7 @@ export function FornecedoresClient({
             options={produtosOpcoes}
             value={produtosSel}
             onChange={(_, v) => setProdutosSel(v)}
-            getOptionLabel={(o) => `${o.nome} (${o.loja})`}
+            getOptionLabel={(o) => o.sku ? `${o.sku} · ${o.nome} (${o.loja})` : `${o.nome} (${o.loja})`}
             isOptionEqualToValue={(a, b) => a.id === b.id}
             loading={carregandoProd}
             renderInput={(params) => (
