@@ -30,9 +30,11 @@ namespace SistemaEtiquetas.API.Services
             var codForn = TextoEtiqueta.RemoverAcentos(item.SKU);
             var envio = TextoEtiqueta.RemoverAcentos(pedido.TipoEnvio);
             envio = string.IsNullOrWhiteSpace(envio) ? "N/A" : envio;
+            var vendedor = TextoEtiqueta.RemoverAcentos(pedido.Vendedor ?? "");
 
-            var linha1Nome   = nome.Length    > 30 ? nome.Substring(0, 30)    : nome;
-            var linhaCodForn = codForn.Length > 28 ? codForn.Substring(0, 28) : codForn;
+            var linha1Nome   = nome.Length      > 30 ? nome.Substring(0, 30)      : nome;
+            var linhaCodForn = codForn.Length   > 15 ? codForn.Substring(0, 15)   : codForn;
+            var linhaVendedor = vendedor.Length > 10 ? vendedor.Substring(0, 10)  : vendedor;
             var linha2Modelo = modelo.Length  > 35 ? modelo.Substring(0, 35)  : modelo;
             var linha3Cor    = cor.Length     > 20 ? cor.Substring(0, 20)     : cor;
             var linha4Tam    = tamanho.Length > 20 ? tamanho.Substring(0, 20) : tamanho;
@@ -57,6 +59,7 @@ namespace SistemaEtiquetas.API.Services
 ^FO20,185^FDCPF: {linha5Cpf}^FS
 ^FO20,220^FDENVIO: {linha6Envio}^FS
 ^FO20,255^FDCOD.FORN.: {linhaCodForn}^FS
+^FO290,255^FDVEND.: {linhaVendedor}^FS
 
 ^XZ";
 
