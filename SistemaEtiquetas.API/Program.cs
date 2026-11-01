@@ -23,6 +23,31 @@ builder.Services.Configure<LojaIntegradaApiOptions>(
     builder.Configuration.GetSection("LojaIntegrada"));
 builder.Services.AddHttpClient<LojaIntegradaProdutoApi>();
 
+builder.Services.Configure<NuvemshopOptions>(options =>
+{
+    builder.Configuration.GetSection("Nuvemshop").Bind(options);
+    // Fallbacks flat (além de Nuvemshop__* já lido pelo Configuration)
+    if (string.IsNullOrWhiteSpace(options.AppId))
+        options.AppId = Environment.GetEnvironmentVariable("NUVEMSHOP_APP_ID") ?? "";
+    if (string.IsNullOrWhiteSpace(options.ClientSecret))
+        options.ClientSecret = Environment.GetEnvironmentVariable("NUVEMSHOP_CLIENT_SECRET") ?? "";
+    if (string.IsNullOrWhiteSpace(options.UserAgent))
+        options.UserAgent = Environment.GetEnvironmentVariable("NUVEMSHOP_USER_AGENT")
+            ?? "SistemaEtiquetas (contato@exemplo.com)";
+    if (string.IsNullOrWhiteSpace(options.ApiBaseUrl))
+        options.ApiBaseUrl = Environment.GetEnvironmentVariable("NUVEMSHOP_API_BASE_URL")
+            ?? "https://api.nuvemshop.com.br/2025-03";
+    if (string.IsNullOrWhiteSpace(options.AuthBaseUrl))
+        options.AuthBaseUrl = Environment.GetEnvironmentVariable("NUVEMSHOP_AUTH_BASE_URL")
+            ?? "https://www.nuvemshop.com.br";
+    if (string.IsNullOrWhiteSpace(options.PublicBaseUrl))
+        options.PublicBaseUrl = Environment.GetEnvironmentVariable("NUVEMSHOP_PUBLIC_BASE_URL")
+            ?? Environment.GetEnvironmentVariable("PUBLIC_BASE_URL")
+            ?? "";
+});
+builder.Services.AddHttpClient<NuvemshopAuthService>();
+builder.Services.AddHttpClient<NuvemshopApiClient>();
+
 builder.Services.Configure<WhatsAppApiOptions>(options =>
 {
     options.PhoneNumberId = builder.Configuration["WhatsApp:PhoneNumberId"]
@@ -101,6 +126,8 @@ app.MapPost("/webhook/produto/donnakora", async (HttpContext http, AppDbContext 
     var payload = await new StreamReader(http.Request.Body).ReadToEndAsync();
     return await WebhookProdutoHandler.Processar(payload, LojaOrigem.DonnaKora, db, catalogo);
 });
+
+app.MapNuvemshop();
 
 app.MapGet("/", () => "API Sistema Etiquetas");
 

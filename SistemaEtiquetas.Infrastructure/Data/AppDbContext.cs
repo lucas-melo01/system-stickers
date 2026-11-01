@@ -19,6 +19,8 @@ namespace SistemaEtiquetas.Infrastructure.Data
 
         public DbSet<NotificacaoFornecedor> NotificacoesFornecedor { get; set; }
 
+        public DbSet<NuvemshopInstalacao> NuvemshopInstalacoes { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
@@ -97,6 +99,15 @@ namespace SistemaEtiquetas.Infrastructure.Data
                     .HasForeignKey(n => n.ProdutoId)
                     .OnDelete(DeleteBehavior.SetNull);
                 b.HasIndex(n => n.CriadoEm);
+            });
+
+            modelBuilder.Entity<NuvemshopInstalacao>(b =>
+            {
+                b.HasKey(i => i.Id);
+                b.Property(i => i.Id).ValueGeneratedOnAdd();
+                b.Property(i => i.AccessToken).IsRequired();
+                b.Property(i => i.Vendedor).IsRequired();
+                b.HasIndex(i => i.StoreId).IsUnique();
             });
 
             base.OnModelCreating(modelBuilder);
