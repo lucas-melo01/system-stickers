@@ -69,7 +69,8 @@ public sealed class EncomendaNotificacaoService
         if (string.IsNullOrWhiteSpace(codigo) && produto != null)
             codigo = produto.CodigoFornecedor ?? produto.Sku ?? "-";
 
-        var mensagem = MontarMensagem(item.Produto, cor, tamanho, codigo ?? "-", pedido.NomeCliente, pedido.PedidoExternoId);
+        var pedidoExibicao = PedidoExternoIdFormat.ParaExibicao(pedido.PedidoExternoId);
+        var mensagem = MontarMensagem(item.Produto, cor, tamanho, codigo ?? "-", pedido.NomeCliente, pedidoExibicao);
 
         if (produto == null)
         {
@@ -101,7 +102,7 @@ public sealed class EncomendaNotificacaoService
             tamanho,
             codigo ?? "-",
             pedido.NomeCliente,
-            pedido.PedidoExternoId,
+            pedidoExibicao,
             cancellationToken);
 
         var msgFinal = avisoImagem != null ? $"{mensagem}\n\n[Aviso: {avisoImagem}]" : mensagem;

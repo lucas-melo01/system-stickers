@@ -20,6 +20,7 @@ import { ManualPedidoActions } from "./manual-pedido-actions";
 import { PaginationBar } from "@/components/PaginationBar";
 import { QzPrinterStatus } from "@/components/QzPrinterStatus";
 import { formatDataHoraBR } from "@/lib/datetime";
+import { formatPedidoExternoId } from "@/lib/format-pedido-externo-id";
 
 type Row = {
   pedidoId: number;
@@ -240,7 +241,7 @@ export function PedidosView({
                     />
                   </TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDataHoraBR(r.dataPedido)}</TableCell>
-                  <TableCell>{r.pedidoExternoId}</TableCell>
+                  <TableCell>{formatPedidoExternoId(r.pedidoExternoId)}</TableCell>
                   <TableCell sx={{ maxWidth: 200 }} title={r.nomeCliente}>
                     {r.nomeCliente} {r.clienteCpf}
                   </TableCell>

@@ -21,6 +21,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import { PaginationBar } from "@/components/PaginationBar";
 import { formatDataHoraBR } from "@/lib/datetime";
+import { formatPedidoExternoId } from "@/lib/format-pedido-externo-id";
 import type { NotificacaoLista, Paged } from "@/lib/normalize-cadastros";
 
 function statusColor(status: string): "success" | "error" | "warning" | "default" {
@@ -108,7 +109,7 @@ export function PedidoCompraView({
               initial.items.map((n) => (
                 <TableRow key={n.id} hover>
                   <TableCell>{formatDataHoraBR(n.criadoEm)}</TableCell>
-                  <TableCell>{n.pedidoExternoId}</TableCell>
+                  <TableCell>{formatPedidoExternoId(n.pedidoExternoId)}</TableCell>
                   <TableCell>{n.nomeCliente}</TableCell>
                   <TableCell>{n.fornecedorNome ?? "—"}</TableCell>
                   <TableCell>{n.produtoNome ?? "—"}</TableCell>
@@ -142,7 +143,7 @@ export function PedidoCompraView({
             <>
               <Typography variant="body2"><strong>Status:</strong> {detalhe.status}</Typography>
               <Typography variant="body2"><strong>Loja:</strong> {detalhe.loja}</Typography>
-              <Typography variant="body2"><strong>Pedido:</strong> {detalhe.pedidoExternoId}</Typography>
+              <Typography variant="body2"><strong>Pedido:</strong> {formatPedidoExternoId(detalhe.pedidoExternoId)}</Typography>
               <Typography variant="body2"><strong>Cliente:</strong> {detalhe.nomeCliente}</Typography>
               <Typography variant="body2"><strong>Fornecedor:</strong> {detalhe.fornecedorNome ?? "—"}</Typography>
               <Typography variant="body2"><strong>Produto:</strong> {detalhe.produtoNome ?? "—"}</Typography>
