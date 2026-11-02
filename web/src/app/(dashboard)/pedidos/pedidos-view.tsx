@@ -245,10 +245,22 @@ export function PedidosView({
                   <TableCell sx={{ maxWidth: 200 }} title={r.nomeCliente}>
                     {r.nomeCliente} {r.clienteCpf}
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 140, whiteSpace: "nowrap" }} title={r.codigoFornecedor || undefined}>
+                  <TableCell
+                    sx={{
+                      maxWidth: 140,
+                      width: 140,
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
+                      whiteSpace: "normal",
+                    }}
+                    title={r.codigoFornecedor || undefined}
+                  >
                     {r.codigoFornecedor || "—"}
                   </TableCell>
-                  <TableCell sx={{ maxWidth: 220 }} title={`${r.produto} — ${r.cor} — ${r.tamanho}`}>
+                  <TableCell
+                    sx={{ maxWidth: 220, overflowWrap: "anywhere", wordBreak: "break-word" }}
+                    title={`${r.produto} — ${r.cor} — ${r.tamanho}`}
+                  >
                     {r.produto} — {r.cor ?? "—"} — {r.tamanho ?? "—"}
                   </TableCell>
                   <TableCell>
