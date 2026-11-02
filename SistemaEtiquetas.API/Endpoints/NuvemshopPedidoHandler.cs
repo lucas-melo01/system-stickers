@@ -148,9 +148,11 @@ public static class NuvemshopPedidoHandler
         if (fulfillment == null)
             return ("N/A", 0m);
 
-        var nome = fulfillment.ShippingOption
+        var nome = NuvemshopJsonHelpers.AsDisplayString(fulfillment.ShippingOption)
             ?? fulfillment.ShippingMethod?.Name
-            ?? fulfillment.Shipping?.Option
+            ?? (fulfillment.Shipping != null
+                ? NuvemshopJsonHelpers.AsDisplayString(fulfillment.Shipping.Option)
+                : null)
             ?? fulfillment.Shipping?.Carrier?.Name
             ?? fulfillment.Shipping?.Type;
 

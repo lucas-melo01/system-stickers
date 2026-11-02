@@ -110,7 +110,7 @@ public sealed class NuvemshopFulfillmentDto
     public JsonElement ShippingCost { get; set; }
 
     [JsonPropertyName("shipping_option")]
-    public string? ShippingOption { get; set; }
+    public JsonElement ShippingOption { get; set; }
 
     [JsonPropertyName("shipping_method")]
     public NuvemshopShippingMethodDto? ShippingMethod { get; set; }
@@ -125,7 +125,7 @@ public sealed class NuvemshopFulfillmentShippingDto
     public NuvemshopCarrierDto? Carrier { get; set; }
 
     [JsonPropertyName("option")]
-    public string? Option { get; set; }
+    public JsonElement Option { get; set; }
 
     [JsonPropertyName("cost")]
     public JsonElement Cost { get; set; }
@@ -209,4 +209,67 @@ public static class NuvemshopJsonHelpers
             _ => el.ToString(),
         };
     }
+
+    /// <summary>
+    /// Extrai texto de campos que a Nuvemshop manda ora como string, ora como objeto
+    /// (ex.: <c>shipping.option</c>).
+    /// </summary>
+    public static string? AsDisplayString(JsonElement el)
+    {
+        return el.ValueKind switch
+        {
+            JsonValueKind.Undefined or JsonValueKind.Null => null,
+            JsonValueKind.String => NullIfWhiteSpace(el.GetString()),
+            JsonValueKind.Number => el.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Object => ReadObjectDisplayName(el),
+            _ => null,
+        };
+    }
+
+    private static string? ReadObjectDisplayName(JsonElement obj)
+    {
+        foreach (var key in new[] { "name", "code", "option", "label", "title" })
+        {
+            if (!obj.TryGetProperty(key, out var prop))
+                continue;
+
+            if (prop.ValueKind == JsonValueKind.String)
+            {
+                var s = NullIfWhiteSpace(prop.GetString());
+                if (s != null) return s;
+            }
+            else if (prop.ValueKind == JsonValueKind.Object)
+            {
+                // name: { "pt": "...", "en": "..." }
+                foreach (var lang in new[] { "pt", "en", "es" })
+                {
+                    if (prop.TryGetProperty(lang, out var localized))
+                    {
+                        var s = NullIfWhiteSpace(localized.GetString());
+                        if (s != null) return s;
+                    }
+                }
+            }
+            else if (prop.ValueKind == JsonValueKind.Number)
+            {
+                return prop.ToString();
+            }
+        }
+
+        foreach (var lang in new[] { "pt", "en", "es" })
+        {
+            if (obj.TryGetProperty(lang, out var localized))
+            {
+                var s = NullIfWhiteSpace(localized.GetString());
+                if (s != null) return s;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? NullIfWhiteSpace(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }
