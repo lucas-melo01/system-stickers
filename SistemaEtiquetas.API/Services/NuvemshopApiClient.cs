@@ -8,10 +8,18 @@ namespace SistemaEtiquetas.API.Services;
 
 public sealed class NuvemshopApiClient
 {
-    private static readonly JsonSerializerOptions JsonOpts = new()
+    private static readonly JsonSerializerOptions JsonOpts = CreateJsonOptions();
+
+    private static JsonSerializerOptions CreateJsonOptions()
     {
-        PropertyNameCaseInsensitive = true,
-    };
+        var opts = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+        opts.Converters.Add(new NuvemshopDateTimeConverter());
+        opts.Converters.Add(new NuvemshopNullableDateTimeConverter());
+        return opts;
+    }
 
     private readonly HttpClient _http;
     private readonly NuvemshopOptions _opt;
@@ -45,8 +53,19 @@ public sealed class NuvemshopApiClient
             return (null, null);
         }
 
-        var order = JsonSerializer.Deserialize<NuvemshopOrderDto>(body, JsonOpts);
-        return (order, body);
+        try
+        {
+            var order = JsonSerializer.Deserialize<NuvemshopOrderDto>(body, JsonOpts);
+            return (order, body);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Falha ao deserializar order Nuvemshop store={StoreId} order={OrderId} body={Body}",
+                storeId, orderId, Truncate(body));
+            return (null, body);
+        }
     }
 
     public async Task EnsureWebhooksAsync(

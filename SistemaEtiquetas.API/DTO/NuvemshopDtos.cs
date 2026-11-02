@@ -54,9 +54,11 @@ public sealed class NuvemshopOrderDto
     public string? GatewayName { get; set; }
 
     [JsonPropertyName("created_at")]
+    [JsonConverter(typeof(NuvemshopNullableDateTimeConverter))]
     public DateTime? CreatedAt { get; set; }
 
     [JsonPropertyName("paid_at")]
+    [JsonConverter(typeof(NuvemshopNullableDateTimeConverter))]
     public DateTime? PaidAt { get; set; }
 
     [JsonPropertyName("payment_details")]
