@@ -24,12 +24,22 @@ public static class NuvemshopHmacHelper
             Encoding.UTF8.GetBytes(provided));
     }
 
-    public static bool Validate(IOptions<NuvemshopOptions> options, string rawBody, IHeaderDictionary headers)
+    public static bool Validate(
+        NuvemshopAppCredentials credentials,
+        string rawBody,
+        IHeaderDictionary headers)
     {
-        var secret = options.Value.ClientSecret;
         var hmac = headers[HmacHeaderName].FirstOrDefault()
             ?? headers["X-Linkedstore-Hmac-Sha256"].FirstOrDefault();
-        return Validate(secret, rawBody, hmac);
+        return Validate(credentials.ClientSecret, rawBody, hmac);
+    }
+
+    /// <summary>Legado: valida com secret Resume (após NormalizeLegacy).</summary>
+    public static bool Validate(IOptions<NuvemshopOptions> options, string rawBody, IHeaderDictionary headers)
+    {
+        var opt = options.Value;
+        opt.NormalizeLegacy();
+        return Validate(opt.GetCredentials(NuvemshopOptions.AppKeyResume), rawBody, headers);
     }
 
     public static string ComputeHmacHex(string clientSecret, string rawBody)

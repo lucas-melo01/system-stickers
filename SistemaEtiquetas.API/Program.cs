@@ -31,6 +31,14 @@ builder.Services.Configure<NuvemshopOptions>(options =>
         options.AppId = Environment.GetEnvironmentVariable("NUVEMSHOP_APP_ID") ?? "";
     if (string.IsNullOrWhiteSpace(options.ClientSecret))
         options.ClientSecret = Environment.GetEnvironmentVariable("NUVEMSHOP_CLIENT_SECRET") ?? "";
+    if (string.IsNullOrWhiteSpace(options.ResumeModas.AppId))
+        options.ResumeModas.AppId = Environment.GetEnvironmentVariable("NUVEMSHOP_RESUME_APP_ID") ?? "";
+    if (string.IsNullOrWhiteSpace(options.ResumeModas.ClientSecret))
+        options.ResumeModas.ClientSecret = Environment.GetEnvironmentVariable("NUVEMSHOP_RESUME_CLIENT_SECRET") ?? "";
+    if (string.IsNullOrWhiteSpace(options.DonnaKora.AppId))
+        options.DonnaKora.AppId = Environment.GetEnvironmentVariable("NUVEMSHOP_DONNA_APP_ID") ?? "";
+    if (string.IsNullOrWhiteSpace(options.DonnaKora.ClientSecret))
+        options.DonnaKora.ClientSecret = Environment.GetEnvironmentVariable("NUVEMSHOP_DONNA_CLIENT_SECRET") ?? "";
     if (string.IsNullOrWhiteSpace(options.UserAgent))
         options.UserAgent = Environment.GetEnvironmentVariable("NUVEMSHOP_USER_AGENT")
             ?? "SistemaEtiquetas (contato@exemplo.com)";
@@ -44,6 +52,7 @@ builder.Services.Configure<NuvemshopOptions>(options =>
         options.PublicBaseUrl = Environment.GetEnvironmentVariable("NUVEMSHOP_PUBLIC_BASE_URL")
             ?? Environment.GetEnvironmentVariable("PUBLIC_BASE_URL")
             ?? "";
+    options.NormalizeLegacy();
 });
 builder.Services.AddHttpClient<NuvemshopAuthService>();
 builder.Services.AddHttpClient<NuvemshopApiClient>();

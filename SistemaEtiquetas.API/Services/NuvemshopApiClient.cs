@@ -68,19 +68,28 @@ public sealed class NuvemshopApiClient
         }
     }
 
+    /// <param name="webhookPathPrefix">
+    /// Path do endpoint de eventos (ex.: <c>/webhook/nuvemshop</c> ou <c>/webhook/nuvemshop/donnakora</c>).
+    /// </param>
     public async Task EnsureWebhooksAsync(
         long storeId,
         string accessToken,
         string webhookBaseUrl,
+        string webhookPathPrefix = "/webhook/nuvemshop",
         CancellationToken cancellationToken = default)
     {
         var baseUrl = webhookBaseUrl.TrimEnd('/');
+        var path = string.IsNullOrWhiteSpace(webhookPathPrefix)
+            ? "/webhook/nuvemshop"
+            : (webhookPathPrefix.StartsWith('/') ? webhookPathPrefix : "/" + webhookPathPrefix);
+        path = path.TrimEnd('/');
+        var eventUrl = $"{baseUrl}{path}";
         var desired = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["order/paid"] = $"{baseUrl}/webhook/nuvemshop",
-            ["app/uninstalled"] = $"{baseUrl}/webhook/nuvemshop",
-            ["app/suspended"] = $"{baseUrl}/webhook/nuvemshop",
-            ["app/resumed"] = $"{baseUrl}/webhook/nuvemshop",
+            ["order/paid"] = eventUrl,
+            ["app/uninstalled"] = eventUrl,
+            ["app/suspended"] = eventUrl,
+            ["app/resumed"] = eventUrl,
         };
 
         var existing = await ListWebhooksAsync(storeId, accessToken, cancellationToken);

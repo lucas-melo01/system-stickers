@@ -2,27 +2,30 @@ namespace SistemaEtiquetas.API.Services;
 
 public static class NuvemshopLojaMapper
 {
-    public static string ResolveVendedor(string? lojaOrState)
+    public static string ResolveAppKey(string? lojaOrStateOrVendedor)
     {
-        if (string.IsNullOrWhiteSpace(lojaOrState))
-            return "Resume Modas";
+        if (string.IsNullOrWhiteSpace(lojaOrStateOrVendedor))
+            return NuvemshopOptions.AppKeyResume;
 
-        var key = lojaOrState.Trim();
+        var key = lojaOrStateOrVendedor.Trim();
         if (key.Equals("donnakora", StringComparison.OrdinalIgnoreCase)
             || key.Equals("donna-kora", StringComparison.OrdinalIgnoreCase)
-            || key.Equals("DonnaKora", StringComparison.OrdinalIgnoreCase))
-            return "DonnaKora";
+            || key.Equals("DonnaKora", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("donna", StringComparison.OrdinalIgnoreCase))
+            return NuvemshopOptions.AppKeyDonna;
 
-        if (key.Equals("resumemodas", StringComparison.OrdinalIgnoreCase)
-            || key.Equals("resume-modas", StringComparison.OrdinalIgnoreCase)
-            || key.Equals("resume", StringComparison.OrdinalIgnoreCase)
-            || key.Equals("Resume Modas", StringComparison.OrdinalIgnoreCase))
-            return "Resume Modas";
-
-        // state pode ser "loja=donnakora" ou similar
-        if (key.Contains("donna", StringComparison.OrdinalIgnoreCase))
-            return "DonnaKora";
-
-        return "Resume Modas";
+        return NuvemshopOptions.AppKeyResume;
     }
+
+    public static string ResolveVendedor(string? lojaOrState)
+    {
+        return ResolveAppKey(lojaOrState) == NuvemshopOptions.AppKeyDonna
+            ? "DonnaKora"
+            : "Resume Modas";
+    }
+
+    public static string WebhookPathPrefix(string appKey) =>
+        ResolveAppKey(appKey) == NuvemshopOptions.AppKeyDonna
+            ? "/webhook/nuvemshop/donnakora"
+            : "/webhook/nuvemshop";
 }

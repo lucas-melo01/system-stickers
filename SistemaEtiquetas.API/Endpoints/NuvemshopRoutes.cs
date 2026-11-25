@@ -18,26 +18,104 @@ public static class NuvemshopRoutes
 
     public static void MapNuvemshop(this WebApplication app)
     {
-        app.MapGet("/oauth/nuvemshop/install", Install);
-        app.MapGet("/oauth/nuvemshop/callback", Callback);
-        app.MapPost("/webhook/nuvemshop", Webhook);
-        app.MapPost("/webhook/nuvemshop/privacy/store-redact", StoreRedact);
-        app.MapPost("/webhook/nuvemshop/privacy/customer-redact", CustomerRedact);
-        app.MapPost("/webhook/nuvemshop/privacy/customers-data-request", CustomersDataRequest);
+        // Resume Modas (paths legados)
+        app.MapGet("/oauth/nuvemshop/install", (HttpContext http, IOptions<NuvemshopOptions> opt) =>
+            Install(http, opt, NuvemshopOptions.AppKeyResume));
+        app.MapGet("/oauth/nuvemshop/callback", (
+            HttpContext http,
+            AppDbContext db,
+            NuvemshopAuthService auth,
+            NuvemshopApiClient api,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            Callback(http, db, auth, api, opt, loggerFactory, NuvemshopOptions.AppKeyResume));
+        app.MapPost("/webhook/nuvemshop", (
+            HttpContext http,
+            AppDbContext db,
+            NuvemshopApiClient api,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            Webhook(http, db, api, opt, loggerFactory, NuvemshopOptions.AppKeyResume));
+        app.MapPost("/webhook/nuvemshop/privacy/store-redact", (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            StoreRedact(http, db, opt, loggerFactory, NuvemshopOptions.AppKeyResume));
+        app.MapPost("/webhook/nuvemshop/privacy/customer-redact", (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            CustomerRedact(http, db, opt, loggerFactory, NuvemshopOptions.AppKeyResume));
+        app.MapPost("/webhook/nuvemshop/privacy/customers-data-request", (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            CustomersDataRequest(http, db, opt, loggerFactory, NuvemshopOptions.AppKeyResume));
+
+        // DonnaKora (app + endpoints separados)
+        app.MapGet("/oauth/nuvemshop/donnakora/install", (HttpContext http, IOptions<NuvemshopOptions> opt) =>
+            Install(http, opt, NuvemshopOptions.AppKeyDonna));
+        app.MapGet("/oauth/nuvemshop/donnakora/callback", (
+            HttpContext http,
+            AppDbContext db,
+            NuvemshopAuthService auth,
+            NuvemshopApiClient api,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            Callback(http, db, auth, api, opt, loggerFactory, NuvemshopOptions.AppKeyDonna));
+        app.MapPost("/webhook/nuvemshop/donnakora", (
+            HttpContext http,
+            AppDbContext db,
+            NuvemshopApiClient api,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            Webhook(http, db, api, opt, loggerFactory, NuvemshopOptions.AppKeyDonna));
+        app.MapPost("/webhook/nuvemshop/donnakora/privacy/store-redact", (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            StoreRedact(http, db, opt, loggerFactory, NuvemshopOptions.AppKeyDonna));
+        app.MapPost("/webhook/nuvemshop/donnakora/privacy/customer-redact", (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            CustomerRedact(http, db, opt, loggerFactory, NuvemshopOptions.AppKeyDonna));
+        app.MapPost("/webhook/nuvemshop/donnakora/privacy/customers-data-request", (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<NuvemshopOptions> opt,
+            ILoggerFactory loggerFactory) =>
+            CustomersDataRequest(http, db, opt, loggerFactory, NuvemshopOptions.AppKeyDonna));
     }
 
-    private static IResult Install(HttpContext http, IOptions<NuvemshopOptions> opt)
+    private static IResult Install(HttpContext http, IOptions<NuvemshopOptions> opt, string appKey)
     {
-        var loja = http.Request.Query["loja"].FirstOrDefault() ?? "resumemodas";
-        var state = NuvemshopLojaMapper.ResolveVendedor(loja) == "DonnaKora"
-            ? "donnakora"
-            : "resumemodas";
+        var options = opt.Value;
+        options.NormalizeLegacy();
+        var credentials = options.GetCredentials(appKey);
+        var state = appKey == NuvemshopOptions.AppKeyDonna ? "donnakora" : "resumemodas";
 
-        if (string.IsNullOrWhiteSpace(opt.Value.AppId))
-            return Results.BadRequest("Nuvemshop AppId não configurado");
+        // Resume ainda aceita ?loja= para compat; Donna ignora e força donnakora
+        if (appKey == NuvemshopOptions.AppKeyResume)
+        {
+            var loja = http.Request.Query["loja"].FirstOrDefault() ?? "resumemodas";
+            if (NuvemshopLojaMapper.ResolveAppKey(loja) == NuvemshopOptions.AppKeyDonna)
+            {
+                return Results.Redirect("/oauth/nuvemshop/donnakora/install");
+            }
+            state = "resumemodas";
+        }
+
+        if (!credentials.IsConfigured)
+            return Results.BadRequest($"Nuvemshop AppId/ClientSecret não configurados ({appKey})");
 
         var auth = http.RequestServices.GetRequiredService<NuvemshopAuthService>();
-        return Results.Redirect(auth.BuildAuthorizeUrl(state));
+        return Results.Redirect(auth.BuildAuthorizeUrl(state, credentials));
     }
 
     private static async Task<IResult> Callback(
@@ -46,18 +124,25 @@ public static class NuvemshopRoutes
         NuvemshopAuthService auth,
         NuvemshopApiClient api,
         IOptions<NuvemshopOptions> opt,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        string appKey)
     {
         var logger = loggerFactory.CreateLogger("NuvemshopOAuth");
-        var code = http.Request.Query["code"].FirstOrDefault();
-        var state = http.Request.Query["state"].FirstOrDefault()
-            ?? http.Request.Query["loja"].FirstOrDefault()
-            ?? "resumemodas";
+        var options = opt.Value;
+        options.NormalizeLegacy();
+        var credentials = options.GetCredentials(appKey);
+        var vendedor = NuvemshopLojaMapper.ResolveVendedor(
+            appKey == NuvemshopOptions.AppKeyDonna ? "donnakora" : "resumemodas");
+        var webhookPath = NuvemshopLojaMapper.WebhookPathPrefix(appKey);
 
+        var code = http.Request.Query["code"].FirstOrDefault();
         if (string.IsNullOrWhiteSpace(code))
             return Results.BadRequest("Parâmetro code ausente");
 
-        var token = await auth.ExchangeCodeAsync(code);
+        if (!credentials.IsConfigured)
+            return Results.BadRequest($"Nuvemshop AppId/ClientSecret não configurados ({appKey})");
+
+        var token = await auth.ExchangeCodeAsync(code, credentials);
         if (token?.AccessToken == null)
             return Results.BadRequest("Falha ao obter access_token da Nuvemshop");
 
@@ -65,7 +150,15 @@ public static class NuvemshopRoutes
         if (storeId <= 0)
             return Results.BadRequest("user_id/store_id ausente na resposta OAuth");
 
-        var vendedor = NuvemshopLojaMapper.ResolveVendedor(state);
+        if (credentials.StoreId is > 0 && credentials.StoreId.Value != storeId)
+        {
+            logger.LogError(
+                "StoreId OAuth divergente app={AppKey} esperado={Expected} obtido={Actual}",
+                appKey, credentials.StoreId, storeId);
+            return Results.BadRequest(
+                $"Loja {storeId} não corresponde ao app {appKey} (esperado {credentials.StoreId}).");
+        }
+
         var now = DateTime.UtcNow;
         var instalacao = await db.NuvemshopInstalacoes.FirstOrDefaultAsync(i => i.StoreId == storeId);
         if (instalacao == null)
@@ -93,16 +186,16 @@ public static class NuvemshopRoutes
 
         await db.SaveChangesAsync();
 
-        var publicBase = ResolvePublicBaseUrl(http, opt.Value);
+        var publicBase = ResolvePublicBaseUrl(http, options);
         if (!string.IsNullOrWhiteSpace(publicBase))
         {
             try
             {
-                await api.EnsureWebhooksAsync(storeId, token.AccessToken, publicBase);
+                await api.EnsureWebhooksAsync(storeId, token.AccessToken, publicBase, webhookPath);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Falha ao registrar webhooks Nuvemshop store={StoreId}", storeId);
+                logger.LogError(ex, "Falha ao registrar webhooks Nuvemshop store={StoreId} app={AppKey}", storeId, appKey);
             }
         }
         else
@@ -115,8 +208,8 @@ public static class NuvemshopRoutes
             <html lang="pt-BR"><head><meta charset="utf-8"><title>Nuvemshop</title></head>
             <body style="font-family:system-ui;padding:2rem">
               <h1>App instalado</h1>
-              <p>Loja <strong>{storeId}</strong> vinculada como <strong>{vendedor}</strong>.</p>
-              <p>Webhooks de pedido pago foram configurados{(string.IsNullOrWhiteSpace(publicBase) ? " (configure Nuvemshop__PublicBaseUrl e reinstale)" : "")}.</p>
+              <p>Loja <strong>{storeId}</strong> vinculada como <strong>{vendedor}</strong> ({appKey}).</p>
+              <p>Webhooks: <code>{webhookPath}</code>{(string.IsNullOrWhiteSpace(publicBase) ? " (configure Nuvemshop__PublicBaseUrl e reinstale)" : "")}.</p>
             </body></html>
             """;
         return Results.Content(html, "text/html; charset=utf-8");
@@ -127,11 +220,15 @@ public static class NuvemshopRoutes
         AppDbContext db,
         NuvemshopApiClient api,
         IOptions<NuvemshopOptions> opt,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        string appKey)
     {
         var logger = loggerFactory.CreateLogger("NuvemshopWebhook");
+        var options = opt.Value;
+        options.NormalizeLegacy();
+        var credentials = options.GetCredentials(appKey);
         var raw = await ReadBodyAsync(http);
-        if (!NuvemshopHmacHelper.Validate(opt, raw, http.Request.Headers))
+        if (!NuvemshopHmacHelper.Validate(credentials, raw, http.Request.Headers))
             return Results.Unauthorized();
 
         NuvemshopWebhookPayload? payload;
@@ -141,7 +238,7 @@ public static class NuvemshopRoutes
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Payload webhook Nuvemshop inválido");
+            logger.LogWarning(ex, "Payload webhook Nuvemshop inválido app={AppKey}", appKey);
             return Results.Ok("ignored");
         }
 
@@ -150,6 +247,14 @@ public static class NuvemshopRoutes
 
         var eventName = payload.Event.Trim();
         var storeId = payload.StoreId;
+
+        if (credentials.StoreId is > 0 && storeId > 0 && credentials.StoreId.Value != storeId)
+        {
+            logger.LogWarning(
+                "Webhook store divergente app={AppKey} esperado={Expected} obtido={Actual}",
+                appKey, credentials.StoreId, storeId);
+            return Results.Ok("store mismatch");
+        }
 
         if (string.Equals(eventName, "order/paid", StringComparison.OrdinalIgnoreCase))
         {
@@ -169,7 +274,7 @@ public static class NuvemshopRoutes
         if (string.Equals(eventName, "app/suspended", StringComparison.OrdinalIgnoreCase)
             || string.Equals(eventName, "app/resumed", StringComparison.OrdinalIgnoreCase))
         {
-            logger.LogWarning("Nuvemshop {Event} store={StoreId}", eventName, storeId);
+            logger.LogWarning("Nuvemshop {Event} store={StoreId} app={AppKey}", eventName, storeId, appKey);
             return Results.Ok("ok");
         }
 
@@ -180,15 +285,19 @@ public static class NuvemshopRoutes
         HttpContext http,
         AppDbContext db,
         IOptions<NuvemshopOptions> opt,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        string appKey)
     {
         var logger = loggerFactory.CreateLogger("NuvemshopPrivacy");
+        var options = opt.Value;
+        options.NormalizeLegacy();
+        var credentials = options.GetCredentials(appKey);
         var raw = await ReadBodyAsync(http);
-        if (!NuvemshopHmacHelper.Validate(opt, raw, http.Request.Headers))
+        if (!NuvemshopHmacHelper.Validate(credentials, raw, http.Request.Headers))
             return Results.Unauthorized();
 
         var storeId = TryReadStoreId(raw);
-        logger.LogInformation("store-redact store={StoreId} payload={Payload}", storeId, Truncate(raw));
+        logger.LogInformation("store-redact app={AppKey} store={StoreId} payload={Payload}", appKey, storeId, Truncate(raw));
 
         if (storeId > 0)
         {
@@ -221,14 +330,18 @@ public static class NuvemshopRoutes
         HttpContext http,
         AppDbContext db,
         IOptions<NuvemshopOptions> opt,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        string appKey)
     {
         var logger = loggerFactory.CreateLogger("NuvemshopPrivacy");
+        var options = opt.Value;
+        options.NormalizeLegacy();
+        var credentials = options.GetCredentials(appKey);
         var raw = await ReadBodyAsync(http);
-        if (!NuvemshopHmacHelper.Validate(opt, raw, http.Request.Headers))
+        if (!NuvemshopHmacHelper.Validate(credentials, raw, http.Request.Headers))
             return Results.Unauthorized();
 
-        logger.LogInformation("customer-redact payload={Payload}", Truncate(raw));
+        logger.LogInformation("customer-redact app={AppKey} payload={Payload}", appKey, Truncate(raw));
 
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(raw) ? "{}" : raw);
         var root = doc.RootElement;
@@ -277,14 +390,18 @@ public static class NuvemshopRoutes
         HttpContext http,
         AppDbContext db,
         IOptions<NuvemshopOptions> opt,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        string appKey)
     {
         var logger = loggerFactory.CreateLogger("NuvemshopPrivacy");
+        var options = opt.Value;
+        options.NormalizeLegacy();
+        var credentials = options.GetCredentials(appKey);
         var raw = await ReadBodyAsync(http);
-        if (!NuvemshopHmacHelper.Validate(opt, raw, http.Request.Headers))
+        if (!NuvemshopHmacHelper.Validate(credentials, raw, http.Request.Headers))
             return Results.Unauthorized();
 
-        logger.LogInformation("customers-data-request payload={Payload}", Truncate(raw));
+        logger.LogInformation("customers-data-request app={AppKey} payload={Payload}", appKey, Truncate(raw));
 
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(raw) ? "{}" : raw);
         var root = doc.RootElement;
@@ -323,7 +440,6 @@ public static class NuvemshopRoutes
             .ToListAsync();
 
         logger.LogInformation("customers-data-request encontrados={Count}", dados.Count);
-        // LGPD: a plataforma espera ACK; o relatório pode ser entregue offline pelo suporte.
         return Results.Ok(new { received = true, count = dados.Count });
     }
 
@@ -337,7 +453,6 @@ public static class NuvemshopRoutes
         if (!string.IsNullOrWhiteSpace(env))
             return env.TrimEnd('/');
 
-        // Fallback: scheme + host da request (útil se o callback já chega pelo domínio público)
         if (http.Request.Host.HasValue)
             return $"{http.Request.Scheme}://{http.Request.Host}".TrimEnd('/');
 

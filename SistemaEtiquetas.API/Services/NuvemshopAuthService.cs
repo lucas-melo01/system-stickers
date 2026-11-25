@@ -27,19 +27,20 @@ public sealed class NuvemshopAuthService
         _http.Timeout = TimeSpan.FromSeconds(30);
     }
 
-    public string BuildAuthorizeUrl(string state)
+    public string BuildAuthorizeUrl(string state, NuvemshopAppCredentials credentials)
     {
         var baseUrl = _opt.AuthBaseUrl.TrimEnd('/');
-        return $"{baseUrl}/apps/{Uri.EscapeDataString(_opt.AppId)}/authorize?state={Uri.EscapeDataString(state)}";
+        return $"{baseUrl}/apps/{Uri.EscapeDataString(credentials.AppId)}/authorize?state={Uri.EscapeDataString(state)}";
     }
 
     public async Task<NuvemshopTokenResponse?> ExchangeCodeAsync(
         string code,
+        NuvemshopAppCredentials credentials,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_opt.AppId) || string.IsNullOrWhiteSpace(_opt.ClientSecret))
+        if (!credentials.IsConfigured)
         {
-            _logger.LogError("Nuvemshop AppId/ClientSecret não configurados");
+            _logger.LogError("Nuvemshop AppId/ClientSecret não configurados para o app solicitado");
             return null;
         }
 
@@ -48,8 +49,8 @@ public sealed class NuvemshopAuthService
         request.Headers.TryAddWithoutValidation("User-Agent", _opt.UserAgent);
         request.Content = JsonContent.Create(new
         {
-            client_id = _opt.AppId,
-            client_secret = _opt.ClientSecret,
+            client_id = credentials.AppId,
+            client_secret = credentials.ClientSecret,
             grant_type = "authorization_code",
             code,
         });
